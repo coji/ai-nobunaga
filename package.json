@@ -1,6 +1,6 @@
 {
   "name": "ai-nobunaga",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "npx 信長 - AI戦国シミュレーションゲーム",
   "type": "module",
   "main": "dist/index.js",
