@@ -2,25 +2,17 @@
 
 import { Box, Text } from "ink";
 import type { ReactNode } from "react";
-import type { Screen, DomesticType, MilitaryType } from "./types.js";
+import type { Screen } from "./types.js";
 import type { GameState } from "../types.js";
-import type { AITurnResult } from "../ai.js";
+import type { AITurnResult } from "../ai/index.js";
 import type { ScreenData } from "./hooks/useGameNavigation.js";
 
-import {
-  MainMenu,
-  DomesticMenu,
-  DomesticCastleScreen,
-  MilitaryMenu,
-  MilitaryCastleScreen,
-  MilitaryAttackScreen,
-  DiplomacyMenu,
-  DiplomacyTargetScreen,
-} from "./menus/index.js";
+import { MainMenu } from "./menus/index.js";
 import {
   StatusScreen,
   StatusMenu,
   MapScreen,
+  CouncilScreen,
   LettersScreen,
   AITurnScreen,
 } from "./screens/index.js";
@@ -40,10 +32,11 @@ export interface ScreenContext {
   state: GameState;
   // アクション
   processEndTurn: () => void;
-  handleDomesticAction: (index: number, type: DomesticType) => void;
-  handleMilitaryCastleAction: (index: number, type: MilitaryType) => void;
-  handleMilitaryAttackAction: (index: number) => void;
-  handleDiplomacyAction: (index: number) => void;
+  handleCouncilProposal: (result: {
+    tool: string;
+    narrative: string;
+    success: boolean;
+  }) => void;
 }
 
 // 画面表示用プロパティ
@@ -55,6 +48,11 @@ export interface RenderProps {
   parentData: ScreenData;
   parentIndex: number;
   aiResults: { clanName: string; result: AITurnResult }[];
+  onCouncilProposal: (result: {
+    tool: string;
+    narrative: string;
+    success: boolean;
+  }) => void;
 }
 
 // 画面定義の型
@@ -63,24 +61,11 @@ interface ScreenDefinition {
   onSelect?: (ctx: ScreenContext) => void;
 }
 
-// メニューオプション定義
+// メニューオプション定義（シンプル化）
 const MAIN_OPTIONS: Screen[] = [
   "status",
-  "domestic",
-  "military",
-  "diplomacy",
+  "council",
   "letters",
-];
-
-const DOMESTIC_TYPES: DomesticType[] = [
-  "develop_agriculture",
-  "develop_commerce",
-];
-
-const MILITARY_TYPES: MilitaryType[] = [
-  "recruit_soldiers",
-  "fortify",
-  "attack",
 ];
 
 // 画面定義
@@ -90,7 +75,7 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
     onSelect: (ctx) => {
       const selected = MAIN_OPTIONS[ctx.selectedIndex];
       if (selected === undefined) {
-        // end_turn (index 5)
+        // end_turn (index 3)
         ctx.processEndTurn();
       } else {
         ctx.pushScreen(selected);
@@ -120,100 +105,14 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
     ),
   },
 
-  domestic: {
-    render: ({ selectedIndex }) => (
-      <DomesticMenu selectedIndex={selectedIndex} />
-    ),
-    onSelect: (ctx) => {
-      const domesticType =
-        DOMESTIC_TYPES[ctx.selectedIndex] || "develop_agriculture";
-      ctx.pushScreen("domestic_castle", { domesticType });
-    },
-  },
-
-  domestic_castle: {
-    render: ({ state, playerClanId, selectedIndex, screenData }) => (
-      <DomesticCastleScreen
+  council: {
+    render: ({ state, playerClanId, onCouncilProposal }) => (
+      <CouncilScreen
         state={state}
         playerClanId={playerClanId}
-        selectedIndex={selectedIndex}
-        domesticType={screenData.domesticType || "develop_agriculture"}
+        onExecuteProposal={onCouncilProposal}
       />
     ),
-    onSelect: (ctx) => {
-      ctx.handleDomesticAction(
-        ctx.selectedIndex,
-        ctx.screenData.domesticType || "develop_agriculture"
-      );
-    },
-  },
-
-  military: {
-    render: ({ selectedIndex }) => (
-      <MilitaryMenu selectedIndex={selectedIndex} />
-    ),
-    onSelect: (ctx) => {
-      const militaryType =
-        MILITARY_TYPES[ctx.selectedIndex] || "recruit_soldiers";
-      if (militaryType === "attack") {
-        ctx.pushScreen("military_attack", { militaryType });
-      } else {
-        ctx.pushScreen("military_castle", { militaryType });
-      }
-    },
-  },
-
-  military_castle: {
-    render: ({ state, playerClanId, selectedIndex, screenData }) => (
-      <MilitaryCastleScreen
-        state={state}
-        playerClanId={playerClanId}
-        selectedIndex={selectedIndex}
-        militaryType={screenData.militaryType || "recruit_soldiers"}
-      />
-    ),
-    onSelect: (ctx) => {
-      ctx.handleMilitaryCastleAction(
-        ctx.selectedIndex,
-        ctx.screenData.militaryType || "recruit_soldiers"
-      );
-    },
-  },
-
-  military_attack: {
-    render: ({ state, playerClanId, selectedIndex }) => (
-      <MilitaryAttackScreen
-        state={state}
-        playerClanId={playerClanId}
-        selectedIndex={selectedIndex}
-      />
-    ),
-    onSelect: (ctx) => {
-      ctx.handleMilitaryAttackAction(ctx.selectedIndex);
-    },
-  },
-
-  diplomacy: {
-    render: ({ selectedIndex }) => (
-      <DiplomacyMenu selectedIndex={selectedIndex} />
-    ),
-    onSelect: (ctx) => {
-      ctx.pushScreen("diplomacy_target");
-    },
-  },
-
-  diplomacy_target: {
-    render: ({ state, playerClanId, selectedIndex, parentIndex }) => (
-      <DiplomacyTargetScreen
-        state={state}
-        playerClanId={playerClanId}
-        selectedIndex={selectedIndex}
-        diplomacyTypeIndex={parentIndex}
-      />
-    ),
-    onSelect: (ctx) => {
-      ctx.handleDiplomacyAction(ctx.selectedIndex);
-    },
   },
 
   letters: {

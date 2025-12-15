@@ -210,8 +210,12 @@ export interface GameState {
 
 // === 行動結果 ===
 
+// 結果のグレード: critical_failure(大失敗), failure(失敗), success(成功), critical_success(大成功)
+export type ResultGrade = "critical_failure" | "failure" | "success" | "critical_success";
+
 export interface ActionResult {
   success: boolean;
+  grade: ResultGrade; // 大成功・大失敗判定
   action: GameAction;
   message: string;
   stateChanges: string[];

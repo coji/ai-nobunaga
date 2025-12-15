@@ -1,10 +1,36 @@
 // AI行動画面コンポーネント
 
 import { Box, Text } from "ink";
-import type { AITurnResult } from "../../ai.js";
+import type { AITurnResult } from "../../ai/index.js";
 
 interface Props {
   aiResults: { clanName: string; result: AITurnResult }[];
+}
+
+// ツール名を日本語に変換
+function getToolDisplayName(tool: string): string {
+  const toolNames: Record<string, string> = {
+    develop_agriculture: "農業開発",
+    develop_commerce: "商業開発",
+    recruit_soldiers: "徴兵",
+    fortify: "城郭強化",
+    attack: "攻撃",
+    propose_alliance: "同盟申込",
+    send_gift: "贈答",
+    threaten: "威嚇",
+    bribe: "買収",
+    spread_rumor: "流言",
+  };
+  return toolNames[tool] || tool;
+}
+
+// narrativeを整形（undefined除去、簡潔化）
+function formatNarrative(narrative: string): string {
+  // "undefined: " を除去
+  let text = narrative.replace(/^undefined:\s*/, "");
+  // "失敗 - " の重複を整理
+  text = text.replace(/^失敗\s*-\s*/, "");
+  return text;
 }
 
 export function AITurnScreen({ aiResults }: Props) {
@@ -18,14 +44,17 @@ export function AITurnScreen({ aiResults }: Props) {
           <Text bold color="cyan">
             {clanName}
           </Text>
-          {result.actions.map((action, j) => (
-            <Box key={j}>
-              <Text color={action.success ? "green" : "red"}>
-                {action.success ? "✓" : "✗"} [{action.tool}] {action.narrative}
-              </Text>
-            </Box>
-          ))}
-          <Text dimColor>→ {result.summary}</Text>
+          {result.actions.length === 0 ? (
+            <Text dimColor>  様子見</Text>
+          ) : (
+            result.actions.map((action, j) => (
+              <Box key={j} marginLeft={1}>
+                <Text color={action.success ? "green" : "red"}>
+                  {action.success ? "○" : "×"} {getToolDisplayName(action.tool)}: {formatNarrative(action.narrative)}
+                </Text>
+              </Box>
+            ))
+          )}
         </Box>
       ))}
     </Box>

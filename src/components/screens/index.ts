@@ -3,5 +3,6 @@
 export { StatusScreen } from "./StatusScreen.js";
 export { StatusMenu } from "./StatusMenu.js";
 export { MapScreen } from "./MapScreen.js";
+export { CouncilScreen } from "./CouncilScreen.js";
 export { LettersScreen } from "./LettersScreen.js";
 export { AITurnScreen } from "./AITurnScreen.js";

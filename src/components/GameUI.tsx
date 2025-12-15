@@ -43,10 +43,7 @@ export function GameUI({ initialState }: Props) {
     getParentData: nav.getParentData,
     state,
     processEndTurn: actions.processEndTurn,
-    handleDomesticAction: actions.handleDomesticAction,
-    handleMilitaryCastleAction: actions.handleMilitaryCastleAction,
-    handleMilitaryAttackAction: actions.handleMilitaryAttackAction,
-    handleDiplomacyAction: actions.handleDiplomacyAction,
+    handleCouncilProposal: actions.handleCouncilProposal,
   };
 
   // 画面表示用プロパティ
@@ -58,6 +55,7 @@ export function GameUI({ initialState }: Props) {
     parentData: nav.getParentData(),
     parentIndex: nav.getParentIndex(),
     aiResults: actions.aiResults,
+    onCouncilProposal: actions.handleCouncilProposal,
   };
 
   // 現在の画面定義
@@ -82,8 +80,11 @@ export function GameUI({ initialState }: Props) {
       return;
     }
 
-    // ESC/Backspaceで戻る
-    if (key.escape || key.backspace || key.delete) {
+    // テキスト入力がある画面ではBackspaceを戻るに使わない
+    const hasTextInput = nav.screen === "council";
+
+    // ESCで戻る（テキスト入力画面以外ではBackspaceでも戻る）
+    if (key.escape || (!hasTextInput && (key.backspace || key.delete))) {
       if (nav.screen === "main") {
         if (key.escape) nav.pushScreen("confirm_exit");
       } else {

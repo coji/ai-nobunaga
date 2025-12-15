@@ -1,13 +1,11 @@
 // 画面ナビゲーション用カスタムフック
 
 import { useState } from "react";
-import type { Screen, DomesticType, MilitaryType } from "../types.js";
+import type { Screen } from "../types.js";
 import type { Letter } from "../../types.js";
 
 // 画面固有データ
 export interface ScreenData {
-  domesticType?: DomesticType;
-  militaryType?: MilitaryType;
   letter?: Letter;
   gameOverReason?: string;
   isVictory?: boolean;

@@ -56,6 +56,71 @@ export const bushoList: Busho[] = [
     clanId: "oda",
     factionId: null,
   },
+  // 前田利家（1560年: 22歳、信長の赤母衣衆として活躍中）
+  {
+    id: "maeda_toshiie",
+    name: "前田利家",
+    politics: 75,
+    warfare: 78,
+    intelligence: 70,
+    charisma: 82,
+    personality: ["義理重視", "野心家"],
+    emotions: { loyalty: 85, fear: 5, respect: 65, discontent: 5 },
+    clanId: "oda",
+    factionId: "oda_shinzan",
+  },
+  // 佐々成政（1560年: 24歳、黒母衣衆として活躍）
+  {
+    id: "sassa_narimasa",
+    name: "佐々成政",
+    politics: 60,
+    warfare: 80,
+    intelligence: 65,
+    charisma: 68,
+    personality: ["義理重視", "保守的"],
+    emotions: { loyalty: 80, fear: 5, respect: 60, discontent: 10 },
+    clanId: "oda",
+    factionId: "oda_fudai",
+  },
+  // 池田恒興（1560年: 24歳、信長の乳兄弟）
+  {
+    id: "ikeda_tsuneoki",
+    name: "池田恒興",
+    politics: 65,
+    warfare: 75,
+    intelligence: 62,
+    charisma: 70,
+    personality: ["義理重視"],
+    emotions: { loyalty: 90, fear: 0, respect: 70, discontent: 0 },
+    clanId: "oda",
+    factionId: null,
+  },
+  // 森可成（1560年: 37歳、攻めの三左として知られる猛将）
+  {
+    id: "mori_yoshinari",
+    name: "森可成",
+    politics: 55,
+    warfare: 85,
+    intelligence: 60,
+    charisma: 72,
+    personality: ["義理重視", "野心家"],
+    emotions: { loyalty: 90, fear: 0, respect: 75, discontent: 0 },
+    clanId: "oda",
+    factionId: "oda_fudai",
+  },
+  // 滝川一益（1560年: 35歳、忍者出身とも言われる智将）
+  {
+    id: "takigawa_kazumasu",
+    name: "滝川一益",
+    politics: 70,
+    warfare: 78,
+    intelligence: 80,
+    charisma: 65,
+    personality: ["実利優先", "野心家"],
+    emotions: { loyalty: 75, fear: 5, respect: 65, discontent: 10 },
+    clanId: "oda",
+    factionId: "oda_shinzan",
+  },
 
   // ===== 今川家 =====
   {
