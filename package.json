@@ -1,7 +1,7 @@
 {
-  "name": "ai-nobunaga",
+  "name": "npx-nobunaga",
   "version": "1.0.0",
-  "description": "AI-driven Sengoku simulation game",
+  "description": "npx 信長 - AI戦国シミュレーションゲーム",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

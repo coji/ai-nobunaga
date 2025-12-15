@@ -114,7 +114,7 @@ export function GameUI({ initialState }: Props) {
       {/* ヘッダー */}
       <Box borderStyle="double" paddingX={2}>
         <Text bold color="yellow">
-          AI信長の野望
+          npx 信長
         </Text>
         <Text> - ターン {state.turn} - </Text>
         <Text color="cyan">{playerClan.name}</Text>

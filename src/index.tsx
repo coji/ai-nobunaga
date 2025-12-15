@@ -8,6 +8,6 @@ import { createInitialGameState } from "./data/scenario.js";
 const initialState = createInitialGameState("oda");
 
 console.clear();
-console.log("AI信長の野望 を起動中...\n");
+console.log("npx 信長 を起動中...\n");
 
 render(<GameUI initialState={initialState} />);

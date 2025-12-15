@@ -3,6 +3,8 @@
 export type Screen =
   | "main"
   | "status"
+  | "status_list"
+  | "status_map"
   | "diplomacy"
   | "diplomacy_target"
   | "military"

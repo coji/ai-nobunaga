@@ -17,7 +17,16 @@ import {
   DiplomacyMenu,
   DiplomacyTargetScreen,
 } from "./menus/index.js";
-import { StatusScreen, LettersScreen, AITurnScreen } from "./screens/index.js";
+import {
+  StatusScreen,
+  StatusMenu,
+  MapScreen,
+  LettersScreen,
+  AITurnScreen,
+} from "./screens/index.js";
+
+// 勢力情報サブメニューオプション
+const STATUS_OPTIONS: Screen[] = ["status_list", "status_map"];
 
 // 画面操作用コンテキスト
 export interface ScreenContext {
@@ -90,8 +99,24 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
   },
 
   status: {
+    render: ({ selectedIndex }) => <StatusMenu selectedIndex={selectedIndex} />,
+    onSelect: (ctx) => {
+      const selected = STATUS_OPTIONS[ctx.selectedIndex];
+      if (selected) {
+        ctx.pushScreen(selected);
+      }
+    },
+  },
+
+  status_list: {
     render: ({ state, playerClanId }) => (
       <StatusScreen state={state} playerClanId={playerClanId} />
+    ),
+  },
+
+  status_map: {
+    render: ({ state, playerClanId }) => (
+      <MapScreen state={state} playerClanId={playerClanId} />
     ),
   },
 
