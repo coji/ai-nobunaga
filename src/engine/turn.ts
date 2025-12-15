@@ -1,0 +1,229 @@
+// ターン終了処理ロジック
+
+import type { Busho, Castle, Clan, GameState } from "../types.js";
+
+/** ターン終了時の収入処理 */
+export function processTurnEnd(state: GameState): string[] {
+  const changes: string[] = [];
+
+  for (const clan of state.clanCatalog.values()) {
+    let totalIncome = 0;
+    let totalFood = 0;
+    let totalUpkeep = 0;
+
+    for (const castleId of clan.castleIds) {
+      const castle = state.castleCatalog.get(castleId)!;
+      // 城主の能力で収入ボーナス
+      const castellan = castle.castellanId
+        ? state.bushoCatalog.get(castle.castellanId)
+        : null;
+      const castellanBonus = castellan ? 0.8 + castellan.politics / 250 : 1.0; // 政治100で1.2倍
+      // 民忠による収入補正（50未満で減少、50で100%、100で120%）
+      const loyaltyModifier = 0.4 + castle.loyalty * 0.008;
+      totalIncome += castle.commerce * 20 * loyaltyModifier * castellanBonus;
+      totalFood += castle.agriculture * 15 * loyaltyModifier * castellanBonus;
+      totalUpkeep += castle.soldiers * 0.2;
+
+      // 民忠が20未満で一揆発生リスク
+      if (castle.loyalty < 20) {
+        const rebellionRoll = Math.random();
+        if (rebellionRoll < 0.3) {
+          const soldierLoss = Math.floor(castle.soldiers * 0.1);
+          castle.soldiers = Math.max(0, castle.soldiers - soldierLoss);
+          changes.push(`⚠️ ${castle.name}で一揆発生！兵${soldierLoss}人離散`);
+        }
+      }
+
+      // 民忠が自然回復（最大50まで）
+      if (castle.loyalty < 50) {
+        castle.loyalty = Math.min(50, castle.loyalty + 2);
+      }
+    }
+
+    const netGold = Math.floor(totalIncome - totalUpkeep);
+    const netFood = Math.floor(totalFood - totalUpkeep);
+    clan.gold += netGold;
+    clan.food += netFood;
+
+    // 金・兵糧がマイナスの場合のペナルティ
+    if (clan.gold < 0) {
+      changes.push(`⚠️ ${clan.name}は金欠状態！`);
+      clan.gold = 0;
+    }
+    if (clan.food < 0) {
+      // 兵糧切れで兵士が離散
+      const totalSoldiers = clan.castleIds.reduce((sum, id) => {
+        const castle = state.castleCatalog.get(id)!;
+        return sum + castle.soldiers;
+      }, 0);
+      const desertion = Math.floor(totalSoldiers * 0.1);
+      for (const castleId of clan.castleIds) {
+        const castle = state.castleCatalog.get(castleId)!;
+        const loss = Math.floor(castle.soldiers * 0.1);
+        castle.soldiers = Math.max(0, castle.soldiers - loss);
+      }
+      changes.push(`⚠️ ${clan.name}は兵糧切れ！兵${desertion}人が離散`);
+      clan.food = 0;
+    }
+
+    changes.push(
+      `${clan.name}: 収入+${Math.floor(totalIncome)}金, 兵糧+${Math.floor(totalFood)}, 維持費-${Math.floor(totalUpkeep)}`
+    );
+  }
+
+  // 武将の忠誠チェック（寝返り・独立）
+  const betrayalChanges = checkBushoLoyalty(state);
+  changes.push(...betrayalChanges);
+
+  state.turn++;
+  return changes;
+}
+
+/** 武将の忠誠チェック - 寝返り・独立判定 */
+function checkBushoLoyalty(state: GameState): string[] {
+  const changes: string[] = [];
+
+  for (const busho of state.bushoCatalog.values()) {
+    // 当主はスキップ
+    if (!busho.clanId) continue;
+    const clan = state.clanCatalog.get(busho.clanId);
+    if (!clan || clan.leaderId === busho.id) continue;
+
+    // 忠誠が30未満で寝返り・独立の可能性
+    if (busho.emotions.loyalty < 30) {
+      const roll = Math.random();
+      const betrayalChance = (30 - busho.emotions.loyalty) / 100; // 忠誠0で30%
+
+      if (roll < betrayalChance) {
+        // 城主かどうかチェック
+        const castle = [...state.castleCatalog.values()].find(
+          (c) => c.castellanId === busho.id
+        );
+
+        if (castle) {
+          // 松平元康の特殊処理：独立して徳川家を建てる
+          if (busho.id === "matsudaira_motoyasu") {
+            changes.push(...handleMatsudairaIndependence(state, busho, castle));
+          } else {
+            // 通常の寝返り：敵対勢力に寝返る
+            changes.push(...handleBetrayalToCastle(state, busho, castle, clan));
+          }
+        } else {
+          // 城主でない武将は出奔
+          busho.clanId = null;
+          busho.factionId = null;
+          changes.push(`⚠️ ${busho.name}が出奔した！`);
+        }
+      }
+    }
+
+    // 不満が高いと忠誠が自然低下
+    if (busho.emotions.discontent > 50) {
+      const loyaltyDrop = Math.floor((busho.emotions.discontent - 50) / 10);
+      busho.emotions.loyalty = Math.max(0, busho.emotions.loyalty - loyaltyDrop);
+    }
+  }
+
+  return changes;
+}
+
+/** 松平元康の独立処理 - 徳川家として独立 */
+function handleMatsudairaIndependence(
+  state: GameState,
+  busho: Busho,
+  castle: Castle
+): string[] {
+  const changes: string[] = [];
+  const oldClan = state.clanCatalog.get(busho.clanId!)!;
+
+  // 旧主から城を削除
+  oldClan.castleIds = oldClan.castleIds.filter((id) => id !== castle.id);
+
+  // 徳川家を作成
+  const tokugawaClan: Clan = {
+    id: "tokugawa",
+    name: "徳川家",
+    leaderId: busho.id,
+    gold: 2000,
+    food: 3000,
+    castleIds: [castle.id],
+  };
+  state.clanCatalog.set("tokugawa", tokugawaClan);
+
+  // 武将の所属を変更
+  busho.clanId = "tokugawa";
+  busho.name = "徳川家康"; // 改名
+  busho.emotions.loyalty = 100;
+  busho.emotions.discontent = 0;
+
+  // 城の所有者を変更
+  castle.ownerId = "tokugawa";
+
+  // 外交関係を追加
+  state.diplomacyRelations.push(
+    { clan1Id: "tokugawa", clan2Id: "oda", type: "neutral", expirationTurn: null },
+    {
+      clan1Id: "tokugawa",
+      clan2Id: "imagawa",
+      type: "hostile",
+      expirationTurn: null,
+    },
+    {
+      clan1Id: "tokugawa",
+      clan2Id: "saito",
+      type: "neutral",
+      expirationTurn: null,
+    }
+  );
+
+  changes.push(
+    `🏯 松平元康が今川家から独立！徳川家康と名乗り徳川家を興す！`
+  );
+  return changes;
+}
+
+/** 通常の寝返り処理 */
+function handleBetrayalToCastle(
+  state: GameState,
+  busho: Busho,
+  castle: Castle,
+  oldClan: Clan
+): string[] {
+  const changes: string[] = [];
+
+  // 敵対している勢力を探す
+  const hostileRelation = state.diplomacyRelations.find(
+    (r) =>
+      r.type === "hostile" &&
+      (r.clan1Id === oldClan.id || r.clan2Id === oldClan.id)
+  );
+
+  if (hostileRelation) {
+    const newClanId =
+      hostileRelation.clan1Id === oldClan.id
+        ? hostileRelation.clan2Id
+        : hostileRelation.clan1Id;
+    const newClan = state.clanCatalog.get(newClanId);
+
+    if (newClan) {
+      // 旧主から城を削除
+      oldClan.castleIds = oldClan.castleIds.filter((id) => id !== castle.id);
+
+      // 新しい主に城を追加
+      newClan.castleIds.push(castle.id);
+      castle.ownerId = newClanId;
+
+      // 武将の所属を変更
+      busho.clanId = newClanId;
+      busho.factionId = null;
+      busho.emotions.loyalty = 60;
+      busho.emotions.discontent = 0;
+
+      changes.push(
+        `⚠️ ${busho.name}が${oldClan.name}を裏切り、${castle.name}ごと${newClan.name}に寝返った！`
+      );
+    }
+  }
+
+  return changes;
+}
