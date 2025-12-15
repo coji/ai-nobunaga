@@ -1,9 +1,12 @@
 {
-  "name": "npx-nobunaga",
+  "name": "ai-nobunaga",
   "version": "1.0.0",
   "description": "npx 信長 - AI戦国シミュレーションゲーム",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "信長": "./dist/index.js"
+  },
   "scripts": {
     "dev": "tsx src/index.tsx",
     "build": "tsc",

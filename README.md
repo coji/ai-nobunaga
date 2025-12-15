@@ -2,9 +2,34 @@
 
 AI戦国シミュレーションゲーム。Google Gemini AIが大名や家臣として思考し、評定（会議）で議論を交わします。
 
+## クイックスタート
+
+```bash
+npx ai-nobunaga
+```
+
+または、グローバルインストールして `信長` コマンドで実行:
+
+```bash
+npm install -g ai-nobunaga
+信長
+```
+
+### APIキーの設定
+
+[Google AI Studio](https://aistudio.google.com/apikey) でAPIキーを取得し、環境変数に設定してください:
+
+```bash
+# 一時的に設定して実行
+GEMINI_API_KEY=your_api_key npx ai-nobunaga
+
+# または、シェルの設定ファイルに追加 (~/.bashrc, ~/.zshrc など)
+export GEMINI_API_KEY=your_api_key
+```
+
 ## スクリーンショット
 
-```
+```text
 ╔══════════════════════════════════════════════╗
 ║ npx 信長 - ターン 1 - 織田家 (織田信長)        ║
 ╚══════════════════════════════════════════════╝
