@@ -17,14 +17,13 @@ npm install -g ai-nobunaga
 
 ### APIキーの設定
 
-[Google AI Studio](https://aistudio.google.com/apikey) でAPIキーを取得し、環境変数に設定してください:
+初回起動時にAPIキーの入力を求められます。[Google AI Studio](https://aistudio.google.com/apikey) で取得してください。
+
+入力したAPIキーは `~/.nobunaga` に保存され、次回以降は自動で読み込まれます。
 
 ```bash
-# 一時的に設定して実行
+# 環境変数で直接指定することも可能
 GEMINI_API_KEY=your_api_key npx ai-nobunaga
-
-# または、シェルの設定ファイルに追加 (~/.bashrc, ~/.zshrc など)
-export GEMINI_API_KEY=your_api_key
 ```
 
 ## スクリーンショット
