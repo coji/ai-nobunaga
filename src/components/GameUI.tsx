@@ -146,7 +146,10 @@ export function GameUI({ initialState }: Props) {
     playerClanId: playerClan.id,
     selectedIndex: nav.selectedIndex,
     screenData: nav.screenData,
+    popScreen: nav.popScreen,
     onCouncilProposal: actions.handleCouncilProposal,
+    actionsRemaining: actions.actionsRemaining,
+    onTurnEnd: actions.processEndTurn,
   }
 
   return (

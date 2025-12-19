@@ -9,6 +9,7 @@ export interface ScreenData {
   letter?: Letter
   gameOverReason?: string
   isVictory?: boolean
+  castleId?: string // 委任設定画面用
 }
 
 interface ScreenState {

@@ -18,6 +18,7 @@ export const castleList: Castle[] = [
     agriculture: 70,
     commerce: 85,
     loyalty: 80,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['nagoya', 'inabayama', 'ise'],
   },
   {
@@ -30,6 +31,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 70,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kiyosu', 'okazaki', 'ise'],
   },
 
@@ -44,6 +46,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 55,
     loyalty: 90,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kiyosu', 'nagoya', 'ogaki'],
   },
 
@@ -58,6 +61,7 @@ export const castleList: Castle[] = [
     agriculture: 55,
     commerce: 50,
     loyalty: 50,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['nagoya', 'hamamatsu', 'yoshida_mikawa'],
   },
   {
@@ -70,6 +74,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 45,
     loyalty: 55,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['okazaki', 'hamamatsu'],
   },
   {
@@ -82,6 +87,7 @@ export const castleList: Castle[] = [
     agriculture: 55,
     commerce: 55,
     loyalty: 65,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['okazaki', 'yoshida_mikawa', 'sunpu'],
   },
 
@@ -96,6 +102,7 @@ export const castleList: Castle[] = [
     agriculture: 80,
     commerce: 70,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['hamamatsu', 'kofu', 'odawara'],
   },
 
@@ -110,6 +117,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 65,
     loyalty: 55,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kiyosu', 'odani', 'ogaki', 'kannonji'],
   },
   {
@@ -122,6 +130,7 @@ export const castleList: Castle[] = [
     agriculture: 55,
     commerce: 50,
     loyalty: 60,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['inabayama', 'odani', 'ise'],
   },
 
@@ -136,6 +145,7 @@ export const castleList: Castle[] = [
     agriculture: 65,
     commerce: 60,
     loyalty: 85,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['sunpu', 'odawara', 'kaizu', 'matsumoto'],
   },
   // 1560年時点: 海津城は武田の信濃支配拠点（上田城は1583年築城なので存在しない）
@@ -149,6 +159,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 40,
     loyalty: 85,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kofu', 'kasugayama', 'matsumoto', 'minowa'],
   },
   {
@@ -161,6 +172,7 @@ export const castleList: Castle[] = [
     agriculture: 45,
     commerce: 40,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kaizu', 'kofu'],
   },
 
@@ -175,6 +187,7 @@ export const castleList: Castle[] = [
     agriculture: 70,
     commerce: 55,
     loyalty: 90,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kaizu', 'yonezawa', 'toyama', 'minowa'],
   },
   // 1560年時点: 富山城は神保氏の支配下
@@ -188,6 +201,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 50,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kasugayama', 'kanazawa', 'ichijodani'],
   },
 
@@ -202,6 +216,7 @@ export const castleList: Castle[] = [
     agriculture: 75,
     commerce: 80,
     loyalty: 85,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['sunpu', 'kofu', 'edo', 'kawagoe'],
   },
   {
@@ -214,6 +229,7 @@ export const castleList: Castle[] = [
     agriculture: 70,
     commerce: 75,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['odawara', 'utsunomiya', 'kawagoe'],
   },
   {
@@ -226,6 +242,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 55,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['odawara', 'edo', 'utsunomiya'],
   },
 
@@ -241,6 +258,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 50,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['edo', 'kawagoe', 'kurokawa', 'minowa'],
   },
   // 1560年時点: 箕輪城は長野業正が城主（上杉の傘下だが独立性が高い）
@@ -254,6 +272,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 45,
     loyalty: 85,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['utsunomiya', 'kasugayama', 'kaizu'],
   },
 
@@ -268,6 +287,7 @@ export const castleList: Castle[] = [
     agriculture: 55,
     commerce: 45,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kasugayama', 'yamagata', 'kurokawa', 'sannohe'],
   },
   {
@@ -280,6 +300,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 45,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['yonezawa', 'kurokawa', 'sannohe'],
   },
   // 1560年時点: 黒川城（会津）は蘆名氏の支配下
@@ -293,6 +314,7 @@ export const castleList: Castle[] = [
     agriculture: 55,
     commerce: 45,
     loyalty: 80,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['yonezawa', 'yamagata', 'utsunomiya'],
   },
   {
@@ -305,6 +327,7 @@ export const castleList: Castle[] = [
     agriculture: 40,
     commerce: 35,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['yonezawa', 'yamagata'],
   },
 
@@ -319,6 +342,7 @@ export const castleList: Castle[] = [
     agriculture: 65,
     commerce: 60,
     loyalty: 80,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['inabayama', 'ichijodani', 'kannonji', 'ogaki'],
   },
   // 1560年時点: 観音寺城は六角氏の居城
@@ -332,6 +356,7 @@ export const castleList: Castle[] = [
     agriculture: 65,
     commerce: 60,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['odani', 'ishiyama', 'inabayama', 'nijo'],
   },
 
@@ -346,6 +371,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 55,
     loyalty: 65,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['odani', 'kanazawa', 'toyama'],
   },
   {
@@ -358,6 +384,7 @@ export const castleList: Castle[] = [
     agriculture: 55,
     commerce: 50,
     loyalty: 90,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['ichijodani', 'toyama'],
   },
 
@@ -373,6 +400,7 @@ export const castleList: Castle[] = [
     agriculture: 40,
     commerce: 85,
     loyalty: 50,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['ishiyama', 'kannonji', 'sakai'],
   },
   {
@@ -385,6 +413,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 90,
     loyalty: 95,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['sakai', 'himeji', 'kannonji', 'nijo', 'saika'],
   },
 
@@ -399,6 +428,7 @@ export const castleList: Castle[] = [
     agriculture: 40,
     commerce: 98,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['ishiyama', 'himeji', 'nijo', 'tokushima', 'saika'],
   },
 
@@ -414,6 +444,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 55,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['ishiyama', 'sakai', 'okayama'],
   },
 
@@ -428,6 +459,7 @@ export const castleList: Castle[] = [
     agriculture: 65,
     commerce: 70,
     loyalty: 85,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['matsuyama', 'tottori', 'okayama', 'gassan_toda'],
   },
   // 1560年時点: 備前は浦上氏の支配下、宇喜多直家は浦上氏の家臣
@@ -441,6 +473,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 65,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['hiroshima', 'himeji', 'sogawa', 'tottori'],
   },
 
@@ -456,6 +489,7 @@ export const castleList: Castle[] = [
     agriculture: 45,
     commerce: 40,
     loyalty: 65,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['hiroshima', 'gassan_toda', 'okayama'],
   },
   {
@@ -468,6 +502,7 @@ export const castleList: Castle[] = [
     agriculture: 40,
     commerce: 35,
     loyalty: 80,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['tottori', 'hiroshima'],
   },
 
@@ -483,6 +518,7 @@ export const castleList: Castle[] = [
     agriculture: 55,
     commerce: 55,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['matsuyama', 'okayama', 'kochi', 'tokushima'],
   },
   {
@@ -495,6 +531,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 55,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['sogawa', 'kochi', 'sakai', 'saika'],
   },
 
@@ -510,6 +547,7 @@ export const castleList: Castle[] = [
     agriculture: 45,
     commerce: 55,
     loyalty: 85,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['sakai', 'tokushima', 'ishiyama'],
   },
 
@@ -524,6 +562,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 45,
     loyalty: 85,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['sogawa', 'tokushima', 'uwajima'],
   },
 
@@ -539,6 +578,7 @@ export const castleList: Castle[] = [
     agriculture: 45,
     commerce: 40,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kochi', 'funai', 'matsuyama'],
   },
   // 1560年時点: 伊予は河野氏が支配
@@ -552,6 +592,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 50,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['uwajima', 'sogawa', 'kokura', 'hiroshima'],
   },
 
@@ -566,6 +607,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 75,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['uwajima', 'usuki', 'kokura'],
   },
   {
@@ -578,6 +620,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 60,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['funai', 'hitoyoshi', 'kagoshima', 'obi'],
   },
   {
@@ -590,6 +633,7 @@ export const castleList: Castle[] = [
     agriculture: 45,
     commerce: 55,
     loyalty: 65,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['funai', 'saga', 'matsuyama'],
   },
 
@@ -604,6 +648,7 @@ export const castleList: Castle[] = [
     agriculture: 60,
     commerce: 55,
     loyalty: 70,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kokura', 'hitoyoshi', 'hirado'],
   },
   // 1560年時点: 平戸は松浦氏が支配。南蛮貿易で栄える
@@ -617,6 +662,7 @@ export const castleList: Castle[] = [
     agriculture: 40,
     commerce: 85,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['saga'],
   },
 
@@ -632,6 +678,7 @@ export const castleList: Castle[] = [
     agriculture: 50,
     commerce: 45,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['saga', 'usuki', 'kagoshima'],
   },
 
@@ -646,6 +693,7 @@ export const castleList: Castle[] = [
     agriculture: 55,
     commerce: 60,
     loyalty: 85,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['hitoyoshi', 'usuki', 'obi'],
   },
   // 1560年時点: 日向は伊東氏が支配。飫肥は島津・伊東の係争地だが伊東優勢
@@ -659,6 +707,7 @@ export const castleList: Castle[] = [
     agriculture: 45,
     commerce: 40,
     loyalty: 75,
+    delegationPolicy: 'none',
     adjacentCastleIds: ['kagoshima', 'usuki'],
   },
 ]

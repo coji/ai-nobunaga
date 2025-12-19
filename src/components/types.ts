@@ -5,6 +5,7 @@ export type Screen =
   | 'status'
   | 'status_list'
   | 'status_map'
+  | 'delegation' // 委任設定画面
   | 'council'
   | 'letters'
   | 'ai_turn'

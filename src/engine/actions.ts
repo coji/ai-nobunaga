@@ -264,10 +264,11 @@ function executeDiplomacyAction(
       }
 
       if (grade === 'critical_success') {
-        // 大成功: 相手の好感度も上昇
-        leader.emotions.respect = Math.min(100, leader.emotions.respect + 20)
+        // 大成功: 相手の好感度も上昇（15〜25 + 魅力ボーナス）
+        const respectBoost = 15 + Math.floor(Math.random() * 11) + Math.floor((ownLeader.charisma - 50) / 10)
+        leader.emotions.respect = Math.min(100, leader.emotions.respect + respectBoost)
         changes.push(
-          `【大成功】${targetClan.name}と固い同盟を締結！相手の信頼も厚い`,
+          `【大成功】${targetClan.name}と固い同盟を締結！（信頼+${respectBoost}）`,
         )
       } else {
         changes.push(`${targetClan.name}と同盟を締結`)
@@ -281,13 +282,15 @@ function executeDiplomacyAction(
       }
     } else {
       if (grade === 'critical_failure') {
-        // 大失敗: 関係悪化
-        leader.emotions.respect = Math.max(0, leader.emotions.respect - 15)
+        // 大失敗: 関係悪化（10〜20の信頼低下、8〜15の不満上昇）
+        const respectDrop = 10 + Math.floor(Math.random() * 11)
+        const discontentBoost = 8 + Math.floor(Math.random() * 8)
+        leader.emotions.respect = Math.max(0, leader.emotions.respect - respectDrop)
         leader.emotions.discontent = Math.min(
           100,
-          leader.emotions.discontent + 10,
+          leader.emotions.discontent + discontentBoost,
         )
-        changes.push(`【大失敗】${targetClan.name}が激怒！関係が悪化した`)
+        changes.push(`【大失敗】${targetClan.name}が激怒！関係が悪化した（信頼-${respectDrop}）`)
       } else {
         changes.push(`${targetClan.name}が同盟を拒否`)
       }
@@ -307,32 +310,37 @@ function executeDiplomacyAction(
 
     // 贈答は基本成功だが、効果に差が出る
     const grade = rollForGrade(true)
-    let respectBoost = 10
+    // 魅力ボーナス（魅力50で+0、100で+5）
+    const giftCharismaBonus = Math.floor((ownLeader.charisma - 50) / 10)
 
     if (grade === 'critical_success') {
-      // 大成功: 相手が大いに喜ぶ
-      respectBoost = 25
+      // 大成功: 相手が大いに喜ぶ（20〜30 + 魅力ボーナス）
+      const respectBoost = 20 + Math.floor(Math.random() * 11) + giftCharismaBonus
       leader.emotions.respect = Math.min(
         100,
         leader.emotions.respect + respectBoost,
       )
-      leader.emotions.discontent = Math.max(0, leader.emotions.discontent - 15)
-      changes.push(`【大成功】${targetClan.name}が大いに喜んだ！友好大幅上昇`)
+      const discontentDrop = 10 + Math.floor(Math.random() * 11)
+      leader.emotions.discontent = Math.max(0, leader.emotions.discontent - discontentDrop)
+      changes.push(`【大成功】${targetClan.name}が大いに喜んだ！（信頼+${respectBoost}）`)
     } else if (grade === 'critical_failure') {
       // 大失敗: 贈り物が届かない、または失礼にあたる
-      respectBoost = -5
+      const respectDrop = 3 + Math.floor(Math.random() * 6)
       leader.emotions.respect = Math.max(
         0,
-        leader.emotions.respect + respectBoost,
+        leader.emotions.respect - respectDrop,
       )
       changes.push(`【失敗】贈り物が道中で紛失…${giftAmount}金を失った`)
     } else {
+      // 通常成功（8〜15 + 魅力ボーナス）
+      const respectBoost = 8 + Math.floor(Math.random() * 8) + giftCharismaBonus
       leader.emotions.respect = Math.min(
         100,
         leader.emotions.respect + respectBoost,
       )
-      leader.emotions.discontent = Math.max(0, leader.emotions.discontent - 5)
-      changes.push(`${targetClan.name}に${giftAmount}金を贈答`)
+      const discontentDrop = 3 + Math.floor(Math.random() * 5)
+      leader.emotions.discontent = Math.max(0, leader.emotions.discontent - discontentDrop)
+      changes.push(`${targetClan.name}に${giftAmount}金を贈答（信頼+${respectBoost}）`)
     }
 
     return {
@@ -377,26 +385,34 @@ function executeDiplomacyAction(
 
   if (action.type === 'threaten') {
     const grade = rollForGrade(true)
+    // 武勇ボーナス（武勇50で+0、100で+5）
+    const warfareBonus = Math.floor((ownLeader.warfare - 50) / 10)
 
     if (grade === 'critical_success') {
-      // 大成功: 相手が完全に怯える
-      leader.emotions.fear = Math.min(100, leader.emotions.fear + 35)
-      changes.push(`【大成功】${targetClan.name}が完全に怯えた！`)
+      // 大成功: 相手が完全に怯える（30〜40 + 武力ボーナス）
+      const fearBoost = 30 + Math.floor(Math.random() * 11) + warfareBonus
+      leader.emotions.fear = Math.min(100, leader.emotions.fear + fearBoost)
+      changes.push(`【大成功】${targetClan.name}が完全に怯えた！（恐怖+${fearBoost}）`)
     } else if (grade === 'critical_failure') {
       // 大失敗: 相手が激怒
-      leader.emotions.fear = Math.max(0, leader.emotions.fear - 10)
+      const fearDrop = 8 + Math.floor(Math.random() * 6)
+      leader.emotions.fear = Math.max(0, leader.emotions.fear - fearDrop)
+      const discontentBoost = 20 + Math.floor(Math.random() * 11)
       leader.emotions.discontent = Math.min(
         100,
-        leader.emotions.discontent + 25,
+        leader.emotions.discontent + discontentBoost,
       )
       changes.push(`【大失敗】${targetClan.name}が逆上！敵意が高まった`)
     } else {
-      leader.emotions.fear = Math.min(100, leader.emotions.fear + 15)
+      // 通常成功（12〜20 + 武力ボーナス）
+      const fearBoost = 12 + Math.floor(Math.random() * 9) + warfareBonus
+      leader.emotions.fear = Math.min(100, leader.emotions.fear + fearBoost)
+      const discontentBoost = 8 + Math.floor(Math.random() * 6)
       leader.emotions.discontent = Math.min(
         100,
-        leader.emotions.discontent + 10,
+        leader.emotions.discontent + discontentBoost,
       )
-      changes.push(`${targetClan.name}を威嚇`)
+      changes.push(`${targetClan.name}を威嚇（恐怖+${fearBoost}）`)
     }
 
     return {
@@ -853,9 +869,12 @@ function executeIntrigueAction(
 
       switch (action.type) {
         case 'bribe': {
-          const loyaltyDrop = Math.floor(20 * effectMultiplier)
+          // 基本低下量 15〜25 + 謀略担当者の知略ボーナス（知略50で+0、100で+10）
+          const baseDrop = 15 + Math.floor(Math.random() * 11) // 15〜25
+          const intelligenceBonus = Math.floor((agentIntelligence - 50) / 5) // 0〜10
+          const loyaltyDrop = Math.floor((baseDrop + intelligenceBonus) * effectMultiplier)
           target.emotions.loyalty -= loyaltyDrop
-          target.emotions.discontent += Math.floor(15 * effectMultiplier)
+          target.emotions.discontent += Math.floor((10 + Math.random() * 10) * effectMultiplier)
 
           // 忠誠が30以下になったら寝返り判定（当主は寝返らない）
           const originalClanId = target.clanId
@@ -922,11 +941,11 @@ function executeIntrigueAction(
             }
           } else if (grade === 'critical_success') {
             changes.push(
-              `【大成功】${target.name}が完全に心変わり！（忠誠${target.emotions.loyalty}）`,
+              `【大成功】${target.name}が完全に心変わり！（忠誠が${target.emotions.loyalty}に低下）`,
             )
           } else {
             changes.push(
-              `${target.name}を買収（忠誠-${loyaltyDrop}→${target.emotions.loyalty}）`,
+              `${target.name}を買収、忠誠が${loyaltyDrop}低下し${target.emotions.loyalty}に`,
             )
           }
           break
@@ -953,23 +972,30 @@ function executeIntrigueAction(
           }
           state.bushoCatalog.delete(target.id)
           break
-        case 'spread_rumor':
-          target.emotions.discontent += Math.floor(25 * effectMultiplier)
+        case 'spread_rumor': {
+          // 不満増加 20〜35 + 知略ボーナス
+          const rumorEffect = 20 + Math.floor(Math.random() * 16) + Math.floor((agentIntelligence - 50) / 10)
+          target.emotions.discontent += Math.floor(rumorEffect * effectMultiplier)
           if (grade === 'critical_success') {
             changes.push(`【大成功】${target.name}の悪評が広まり、家中大混乱！`)
           } else {
-            changes.push(`${target.name}に関する流言が広まった`)
+            changes.push(`${target.name}に関する流言が広まった（不満+${Math.floor(rumorEffect * effectMultiplier)}）`)
           }
           break
-        case 'incite_rebellion':
-          target.emotions.loyalty -= Math.floor(30 * effectMultiplier)
-          target.emotions.discontent += Math.floor(30 * effectMultiplier)
+        }
+        case 'incite_rebellion': {
+          // 忠誠低下 25〜40、不満増加 25〜40 + 知略ボーナス
+          const rebellionLoyaltyDrop = 25 + Math.floor(Math.random() * 16) + Math.floor((agentIntelligence - 50) / 10)
+          const rebellionDiscontent = 25 + Math.floor(Math.random() * 16) + Math.floor((agentIntelligence - 50) / 10)
+          target.emotions.loyalty -= Math.floor(rebellionLoyaltyDrop * effectMultiplier)
+          target.emotions.discontent += Math.floor(rebellionDiscontent * effectMultiplier)
           if (grade === 'critical_success') {
             changes.push(`【大成功】${target.name}が謀反を決意！`)
           } else {
-            changes.push(`${target.name}に謀反を唆した`)
+            changes.push(`${target.name}に謀反を唆した（忠誠-${Math.floor(rebellionLoyaltyDrop * effectMultiplier)}）`)
           }
           break
+        }
       }
     }
     return {

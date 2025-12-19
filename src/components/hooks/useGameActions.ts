@@ -55,10 +55,8 @@ export function useGameActions({
       // updateGameState を呼ぶ必要もない（engine 側で既に変更済み）
 
       // 行動ポイントを消費
-      const remaining = consumeAction()
-      if (remaining <= 0) {
-        setTimeout(() => processEndTurnRef.current?.(), 100)
-      }
+      // 注: 最後の行動後は CouncilScreen で結果確認後に processEndTurn を呼ぶ
+      consumeAction()
     },
     [actionsRemaining, setMessage, consumeAction],
   )

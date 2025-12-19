@@ -2,9 +2,74 @@
 
 import type { Busho, Castle, Clan, GameState } from '../types.js'
 
+/** 委任による城の成長処理 */
+function processDelegation(state: GameState): string[] {
+  const changes: string[] = []
+
+  for (const castle of state.castleCatalog.values()) {
+    // 委任なし、または城主がいない場合はスキップ
+    if (castle.delegationPolicy === 'none' || !castle.castellanId) continue
+
+    const castellan = state.bushoCatalog.get(castle.castellanId)
+    if (!castellan) continue
+
+    const clan = state.clanCatalog.get(castle.ownerId)
+    if (!clan) continue
+
+    // 城主の政治力で成長量が変わる（政治50で基準、100で2倍）
+    const politicsBonus = castellan.politics / 50
+
+    switch (castle.delegationPolicy) {
+      case 'agriculture': {
+        // 農業成長: 3〜6 × 政治ボーナス
+        const growth = Math.floor((3 + Math.random() * 3) * politicsBonus)
+        castle.agriculture = Math.min(100, castle.agriculture + growth)
+        break
+      }
+      case 'commerce': {
+        // 商業成長: 3〜6 × 政治ボーナス
+        const growth = Math.floor((3 + Math.random() * 3) * politicsBonus)
+        castle.commerce = Math.min(100, castle.commerce + growth)
+        break
+      }
+      case 'military': {
+        // 徴兵: 50〜100 × 政治ボーナス（金を消費）
+        const recruitCost = 200
+        if (clan.gold >= recruitCost) {
+          const soldiers = Math.floor((50 + Math.random() * 50) * politicsBonus)
+          castle.soldiers += soldiers
+          clan.gold -= recruitCost
+        }
+        break
+      }
+      case 'defense': {
+        // 防御成長: 2〜4 × 政治ボーナス
+        const growth = Math.floor((2 + Math.random() * 2) * politicsBonus)
+        castle.defense = Math.min(100, castle.defense + growth)
+        break
+      }
+      case 'balanced': {
+        // バランス型: 全て少しずつ（1〜2 × 政治ボーナス）
+        const growth = Math.floor((1 + Math.random()) * politicsBonus)
+        castle.agriculture = Math.min(100, castle.agriculture + growth)
+        castle.commerce = Math.min(100, castle.commerce + growth)
+        castle.defense = Math.min(100, castle.defense + growth)
+        castle.soldiers += Math.floor(growth * 10)
+        break
+      }
+    }
+  }
+
+  return changes
+}
+
 /** ターン終了時の収入処理 */
 export function processTurnEnd(state: GameState): string[] {
   const changes: string[] = []
+
+  // 委任処理を先に実行
+  const delegationChanges = processDelegation(state)
+  changes.push(...delegationChanges)
 
   for (const clan of state.clanCatalog.values()) {
     let totalIncome = 0

@@ -25,6 +25,8 @@ interface Props {
     narrative: string
     success: boolean
   }) => void
+  actionsRemaining?: number
+  onTurnEnd?: () => void
 }
 
 // 感情に応じた色とアイコン
@@ -79,6 +81,8 @@ export function CouncilScreen({
   state,
   playerClanId,
   onExecuteProposal,
+  actionsRemaining,
+  onTurnEnd,
 }: Props) {
   // Store から executeToolCall を取得
   const executeToolCall = useGameStore((s) => s.executeToolCall)
@@ -254,7 +258,12 @@ ${enemyInfo.join('\n')}
         return
       }
       if (key.return) {
-        handleNewTopic()
+        // 最後の行動だった場合はターンエンドへ
+        if (actionsRemaining !== undefined && actionsRemaining <= 0 && onTurnEnd) {
+          onTurnEnd()
+        } else {
+          handleNewTopic()
+        }
       }
     },
     { isActive: phase === 'result' },
@@ -742,7 +751,13 @@ ${enemyInfo.join('\n')}
           {phase === 'discussing' && '議論中...'}
           {phase === 'proposals' &&
             '[↑↓] 選択 [Enter] 決定 [Tab] 議論ログ [ESC] 戻る'}
-          {phase === 'result' && '[Enter] 新しい議題 [Tab] 議論ログ [ESC] 戻る'}
+          {phase === 'result' &&
+            actionsRemaining !== undefined &&
+            actionsRemaining <= 0 &&
+            '[Enter] ターンエンド [Tab] 議論ログ'}
+          {phase === 'result' &&
+            (actionsRemaining === undefined || actionsRemaining > 0) &&
+            '[Enter] 新しい議題 [Tab] 議論ログ [ESC] 戻る'}
         </Text>
       </Box>
     </Box>

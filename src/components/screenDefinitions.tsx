@@ -10,6 +10,7 @@ import { MainMenu } from './menus/index.js'
 import {
   AITurnScreen,
   CouncilScreen,
+  DelegationScreen,
   LettersScreen,
   MapScreen,
   StatusMenu,
@@ -44,11 +45,14 @@ export interface RenderProps {
   playerClanId: string
   selectedIndex: number
   screenData: ScreenData
+  popScreen: () => void
   onCouncilProposal: (result: {
     tool: string
     narrative: string
     success: boolean
   }) => void
+  actionsRemaining: number
+  onTurnEnd: () => void
 }
 
 // 画面定義の型
@@ -87,18 +91,47 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
 
   status_list: {
     render: ({ selectedIndex }) => <StatusScreen selectedIndex={selectedIndex} />,
+    onSelect: (ctx) => {
+      // 選択した勢力が自国なら委任設定画面へ
+      const clans = [...ctx.state.clanCatalog.values()]
+      const selectedClan = clans[ctx.selectedIndex]
+      if (selectedClan && selectedClan.id === ctx.state.playerClanId) {
+        // 自国の城リストから最初の城を選択（後で城選択機能を追加可能）
+        const firstCastleId = selectedClan.castleIds[0]
+        if (firstCastleId) {
+          ctx.pushScreen('delegation', { castleId: firstCastleId })
+        }
+      }
+    },
   },
 
   status_map: {
     render: () => <MapScreen />,
   },
 
+  delegation: {
+    render: ({ screenData, popScreen }) => (
+      <DelegationScreen
+        castleId={screenData.castleId || ''}
+        onClose={popScreen}
+      />
+    ),
+  },
+
   council: {
-    render: ({ state, playerClanId, onCouncilProposal }) => (
+    render: ({
+      state,
+      playerClanId,
+      onCouncilProposal,
+      actionsRemaining,
+      onTurnEnd,
+    }) => (
       <CouncilScreen
         state={state}
         playerClanId={playerClanId}
         onExecuteProposal={onCouncilProposal}
+        actionsRemaining={actionsRemaining}
+        onTurnEnd={onTurnEnd}
       />
     ),
   },

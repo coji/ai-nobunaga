@@ -103,16 +103,58 @@ export async function executeAITurn(
   // 性格に基づく行動傾向を決定
   const personalityHints = getPersonalityHints(leader.personality)
 
+  // 総兵力を計算
+  const totalSoldiers = ownCastleIds.reduce((sum, id) => {
+    const c = state.castleCatalog.get(id)
+    return sum + (c?.soldiers ?? 0)
+  }, 0)
+
+  // 状況に応じた推奨行動を生成
+  const getRecommendedAction = (): string => {
+    // 兵力が少なければ徴兵優先
+    if (totalSoldiers < 300) {
+      return '兵力不足。recruit で兵を増やせ。'
+    }
+    // 金が少なければ開発
+    if (clan.gold < 500) {
+      return '資金不足。develop で commerce を発展させよ。'
+    }
+    // 攻撃可能で兵力十分なら攻撃を検討
+    const firstTarget = attackTargets[0]
+    if (firstTarget && totalSoldiers >= 800) {
+      const targetCastle = state.castleCatalog.get(firstTarget.to)
+      if (targetCastle && totalSoldiers > targetCastle.soldiers * 1.5) {
+        return `attack で ${targetCastle.name} を攻めるチャンス。`
+      }
+    }
+    // 同盟国がいなければ外交
+    const hasAlliance = state.diplomacyRelations.some(
+      (r) =>
+        r.type === 'alliance' &&
+        (r.clan1Id === clanId || r.clan2Id === clanId),
+    )
+    if (!hasAlliance) {
+      return 'diplomacy で同盟を結べ。孤立は危険。'
+    }
+    // それ以外は開発
+    return 'develop で国力を高めよ。'
+  }
+
   // シンプルなプロンプトで1回のLLM呼び出しに最適化
-  const systemPrompt = `戦国AI大名「${leader.name}」として、1つの行動を選べ。
+  const systemPrompt = `戦国AI大名「${leader.name}」として、必ず1つの行動を実行せよ。
 性格: ${leader.personality.join(', ')}
 ${personalityHints}
-JSONで返答: {"action":"recruit|develop|attack|diplomacy|none","params":{...}}
-- recruit: {"castleId":"${firstCastleId}","count":500} 兵を徴募
-- develop: {"castleId":"${firstCastleId}","type":"agriculture"} 開発（type: agriculture/commerce/defense）
-- attack: {"fromCastleId":"出撃城ID","targetCastleId":"敵城ID","soldierCount":1000} 攻撃
+
+【重要】毎ターン必ず何かを実行せよ。様子見は弱者の証。天下を狙うなら動け。
+現状分析: ${getRecommendedAction()}
+
+JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
+- recruit: {"castleId":"${firstCastleId}","count":${Math.min(500, Math.floor(clan.gold / 3))}} 兵を徴募（兵糧消費）
+- develop: {"castleId":"${firstCastleId}","type":"agriculture|commerce|defense"} 開発（金500消費）
+- attack: {"fromCastleId":"出撃城ID","targetCastleId":"敵城ID","soldierCount":兵数} 攻撃
 - diplomacy: {"targetClanId":"相手勢力ID"} 同盟提案
-- none: 何もしない`
+
+※ "none" は選択不可。必ず上記4つから選べ。`
 
   const contextPrompt = buildGameContextPrompt(state, clanId)
 

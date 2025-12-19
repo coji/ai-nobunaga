@@ -62,6 +62,15 @@ export interface Clan {
 
 // === 城・領地関連 ===
 
+/** 委任方針 */
+export type DelegationPolicy =
+  | 'none' // 委任なし
+  | 'agriculture' // 農業重視
+  | 'commerce' // 商業重視
+  | 'military' // 軍備重視（徴兵）
+  | 'defense' // 防衛重視
+  | 'balanced' // バランス型
+
 /** 城 */
 export interface Castle {
   id: string
@@ -75,6 +84,8 @@ export interface Castle {
   loyalty: number // 民忠 (1-100) - 低いと一揆発生、収入減少
   // 隣接する城ID
   adjacentCastleIds: string[]
+  // 委任方針（城主がいる場合のみ有効）
+  delegationPolicy: DelegationPolicy
 }
 
 // === 怨恨・履歴関連 ===

@@ -2,7 +2,18 @@
 
 import { Box, Text } from 'ink'
 import { useGameState, usePlayerClanId } from '../../store/gameStore.js'
+import type { DelegationPolicy } from '../../types.js'
 import { getDiplomacyLabel, getLoyaltyColor } from '../utils.js'
+
+// 委任方針の日本語ラベル
+const DELEGATION_LABELS: Record<DelegationPolicy, string> = {
+  none: '-',
+  agriculture: '農業',
+  commerce: '商業',
+  military: '軍備',
+  defense: '防衛',
+  balanced: 'バランス',
+}
 
 interface Props {
   selectedIndex: number
@@ -69,6 +80,7 @@ export function StatusScreen({ selectedIndex }: Props) {
               const bushoLoyaltyColor = castellan
                 ? getLoyaltyColor(castellan.emotions.loyalty)
                 : 'green'
+              const delegationLabel = DELEGATION_LABELS[castle.delegationPolicy]
               return (
                 <Text key={id}>
                   　　{castle.name}（
@@ -80,11 +92,17 @@ export function StatusScreen({ selectedIndex }: Props) {
                   ）: 兵{castle.soldiers} 農{castle.agriculture} 商
                   {castle.commerce} 防{castle.defense} 民忠
                   <Text color={loyaltyColor}>{castle.loyalty}</Text>
+                  {isPlayer && castle.delegationPolicy !== 'none' && (
+                    <Text color="magenta"> 委任:{delegationLabel}</Text>
+                  )}
                 </Text>
               )
             })}
             {!isPlayer && relation && (
               <Text dimColor>　関係: {getDiplomacyLabel(relation.type)}</Text>
+            )}
+            {isPlayer && (
+              <Text color="green">　[Enter] 委任設定</Text>
             )}
           </Box>
         )
