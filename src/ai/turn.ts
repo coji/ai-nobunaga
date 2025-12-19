@@ -1,6 +1,6 @@
 // AIターン・プレイヤーコマンド実行
 
-import type { GameState } from '../types.js'
+import type { GameState, PersonalityTag } from '../types.js'
 import { ai, MODEL, MODEL_LITE, THINKING } from './client.js'
 import { executeToolCall } from './executor.js'
 import {
@@ -8,6 +8,53 @@ import {
   buildPlayerCommandSystemPrompt,
 } from './prompts.js'
 import { gameTools } from './tools.js'
+
+// 性格に基づく行動傾向ヒントを生成
+function getPersonalityHints(personality: PersonalityTag[]): string {
+  const hints: string[] = []
+
+  // 実利優先 → 内政重視
+  if (personality.includes('実利優先')) {
+    hints.push('内政開発（agriculture/commerce）を優先せよ。攻撃は兵力に余裕がある時のみ。')
+  }
+
+  // 義理重視 → 外交・同盟重視
+  if (personality.includes('義理重視')) {
+    hints.push('diplomacyで同盟を結び、信頼を築け。不義の攻撃は避けよ。')
+  }
+
+  // 野心家 → 積極的だが準備も怠らない
+  if (personality.includes('野心家')) {
+    hints.push('領土拡大を目指せ。ただし勝てる戦のみ挑め。兵力不足なら徴兵せよ。')
+  }
+
+  // 猜疑心 → 防衛・徴兵重視
+  if (personality.includes('猜疑心')) {
+    hints.push('防衛を固めよ（fortify）。兵力を蓄え、守りを万全に。')
+  }
+
+  // 権威主義 → バランス型だが見栄えを気にする
+  if (personality.includes('権威主義')) {
+    hints.push('国力を充実させよ。商業発展で富を示し、兵で威を示せ。')
+  }
+
+  // 保守的 → 現状維持・防衛優先
+  if (personality.includes('保守的')) {
+    hints.push('軽挙妄動を避けよ。内政を固め、守りを万全にせよ。攻撃は慎重に。')
+  }
+
+  // 革新的 → 積極的な開発
+  if (personality.includes('革新的')) {
+    hints.push('新しき技術と商業で国を富ませよ。agriculture や commerce を発展させよ。')
+  }
+
+  // 性格がない場合のデフォルト
+  if (hints.length === 0) {
+    hints.push('状況を見極めて行動せよ。')
+  }
+
+  return `行動指針: ${hints.join(' ')}`
+}
 
 // === AI大名のターン実行 ===
 
@@ -53,9 +100,13 @@ export async function executeAITurn(
     }
   }
 
+  // 性格に基づく行動傾向を決定
+  const personalityHints = getPersonalityHints(leader.personality)
+
   // シンプルなプロンプトで1回のLLM呼び出しに最適化
   const systemPrompt = `戦国AI大名「${leader.name}」として、1つの行動を選べ。
 性格: ${leader.personality.join(', ')}
+${personalityHints}
 JSONで返答: {"action":"recruit|develop|attack|diplomacy|none","params":{...}}
 - recruit: {"castleId":"${firstCastleId}","count":500} 兵を徴募
 - develop: {"castleId":"${firstCastleId}","type":"agriculture"} 開発（type: agriculture/commerce/defense）

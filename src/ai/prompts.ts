@@ -15,10 +15,17 @@ export function buildGameContextPrompt(
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
 
+  // 自国の城情報と総兵力計算
+  let totalSoldiers = 0
+  let totalAgriculture = 0
+  let totalCommerce = 0
   const ownCastles = clan.castleIds
     .map((id) => {
       const c = state.castleCatalog.get(id)
       if (!c) return null
+      totalSoldiers += c.soldiers
+      totalAgriculture += c.agriculture
+      totalCommerce += c.commerce
       return `  - ${c.name}(ID:${c.id}): 兵${c.soldiers}, 防御${c.defense}, 農業${c.agriculture}, 商業${c.commerce}`
     })
     .filter(Boolean)
@@ -29,14 +36,39 @@ export function buildGameContextPrompt(
     .map((b) => `  - ${b.name}(ID:${b.id}): 忠誠${b.emotions.loyalty}`)
     .join('\n')
 
+  // 隣接勢力を特定（自国の城と隣接する敵城の所有者）
+  const adjacentClanIds = new Set<string>()
+  for (const castleId of clan.castleIds) {
+    const castle = state.castleCatalog.get(castleId)
+    if (!castle) continue
+    for (const adjId of castle.adjacentCastleIds) {
+      const adj = state.castleCatalog.get(adjId)
+      if (adj && adj.ownerId !== clanId) {
+        adjacentClanIds.add(adj.ownerId)
+      }
+    }
+  }
+
+  // 同盟国を特定
+  const alliedClanIds = new Set<string>()
+  for (const rel of state.diplomacyRelations) {
+    if (rel.type === 'alliance') {
+      if (rel.clan1Id === clanId) alliedClanIds.add(rel.clan2Id)
+      if (rel.clan2Id === clanId) alliedClanIds.add(rel.clan1Id)
+    }
+  }
+
   const otherClans = [...state.clanCatalog.values()]
     .filter((c) => c.id !== clanId)
     .map((c) => {
       const l = state.bushoCatalog.get(c.leaderId)
+      // 勢力の総兵力を計算
+      let clanSoldiers = 0
       const castles = c.castleIds
         .map((id) => {
           const castle = state.castleCatalog.get(id)
           if (!castle) return null
+          clanSoldiers += castle.soldiers
           return `${castle.name}(ID:${id}, 兵${castle.soldiers})`
         })
         .filter(Boolean)
@@ -46,7 +78,14 @@ export function buildGameContextPrompt(
           (r.clan1Id === clanId && r.clan2Id === c.id) ||
           (r.clan1Id === c.id && r.clan2Id === clanId),
       )
-      return `  - ${c.name}(ID:${c.id}): 当主${l?.name}, 関係=${relation?.type || 'neutral'}, 城=[${castles}]`
+      const relationType = relation?.type || 'neutral'
+      const isAdjacent = adjacentClanIds.has(c.id)
+      const tags: string[] = []
+      if (isAdjacent) tags.push('隣接')
+      if (relationType === 'alliance') tags.push('同盟中')
+      if (relationType === 'hostile') tags.push('敵対中')
+      const tagStr = tags.length > 0 ? `【${tags.join('・')}】` : ''
+      return `  - ${c.name}(ID:${c.id})${tagStr}: 当主${l?.name}, 総兵力${clanSoldiers}, 城=[${castles}]`
     })
     .join('\n')
 
@@ -73,11 +112,20 @@ export function buildGameContextPrompt(
     })
     .join('\n')
 
+  // 同盟国リスト
+  const alliedNames = [...alliedClanIds]
+    .map((id) => state.clanCatalog.get(id)?.name)
+    .filter(Boolean)
+    .join(', ')
+
   return `
 # ターン${state.turn} - ${clan.name}（${leader.name}）
 
-## 資源
+## 自国の状況
 金: ${clan.gold}, 兵糧: ${clan.food}
+総兵力: ${totalSoldiers}, 城数: ${clan.castleIds.length}
+経済力: 農業${totalAgriculture}, 商業${totalCommerce}
+同盟国: ${alliedNames || 'なし'}
 
 ## 自軍の城
 ${ownCastles}
