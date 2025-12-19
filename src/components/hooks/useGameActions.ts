@@ -52,7 +52,13 @@ export function useGameActions({
     }
 
     setMessage(result.narrative)
-    setState({ ...state })
+    // Map を新しいインスタンスにコピーして React に変更を検知させる
+    setState({
+      ...state,
+      bushoCatalog: new Map(state.bushoCatalog),
+      castleCatalog: new Map(state.castleCatalog),
+      clanCatalog: new Map(state.clanCatalog),
+    })
 
     // 行動ポイントを消費
     consumeAction()
