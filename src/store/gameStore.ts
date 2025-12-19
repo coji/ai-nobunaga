@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { executeToolCall as executeToolCallFn } from '../ai/executor.js'
+import { processTurnEnd as processTurnEndFn } from '../engine/turn.js'
 import type { AITurnResult } from '../ai/index.js'
 import type { ActionResult, GameState } from '../types.js'
 
@@ -53,6 +54,9 @@ interface GameStore extends UIState {
     toolName: string,
     args: Record<string, unknown>,
   ) => ExecuteResult
+
+  // ターン終了処理
+  processTurnEnd: () => string[]
 }
 
 export const useGameStore = create<GameStore>()(
@@ -173,6 +177,20 @@ export const useGameStore = create<GameStore>()(
         throw new Error('executeToolCall did not return a result')
       }
       return execResult
+    },
+
+    // ターン終了処理（immer の draft を通じて実行）
+    processTurnEnd: () => {
+      let changes: string[] = []
+
+      set((draft) => {
+        if (!draft.gameState) {
+          throw new Error('Game state not initialized')
+        }
+        changes = processTurnEndFn(draft.gameState as GameState)
+      })
+
+      return changes
     },
   })),
 )

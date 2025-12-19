@@ -18,8 +18,9 @@ export { executeToolCall } from './executor.js'
 export { buildGameContextPrompt, getPersonalityDescription } from './prompts.js'
 export { gameTools } from './tools.js'
 export {
-  executeAITurn,
+  decideAIAction,
   executePlayerCommand,
+  type AIDecision,
   type AITurnResult,
   type PlayerCommandResult,
 } from './turn.js'

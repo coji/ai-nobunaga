@@ -24,12 +24,14 @@ function processDelegation(state: GameState): string[] {
         // 農業成長: 3〜6 × 政治ボーナス
         const growth = Math.floor((3 + Math.random() * 3) * politicsBonus)
         castle.agriculture = Math.min(100, castle.agriculture + growth)
+        changes.push(`📦 ${castle.name}: 農業+${growth}（${castellan.name}）`)
         break
       }
       case 'commerce': {
         // 商業成長: 3〜6 × 政治ボーナス
         const growth = Math.floor((3 + Math.random() * 3) * politicsBonus)
         castle.commerce = Math.min(100, castle.commerce + growth)
+        changes.push(`💰 ${castle.name}: 商業+${growth}（${castellan.name}）`)
         break
       }
       case 'military': {
@@ -39,6 +41,7 @@ function processDelegation(state: GameState): string[] {
           const soldiers = Math.floor((50 + Math.random() * 50) * politicsBonus)
           castle.soldiers += soldiers
           clan.gold -= recruitCost
+          changes.push(`⚔️ ${castle.name}: 兵+${soldiers}（${castellan.name}）`)
         }
         break
       }
@@ -46,15 +49,18 @@ function processDelegation(state: GameState): string[] {
         // 防御成長: 2〜4 × 政治ボーナス
         const growth = Math.floor((2 + Math.random() * 2) * politicsBonus)
         castle.defense = Math.min(100, castle.defense + growth)
+        changes.push(`🏯 ${castle.name}: 防御+${growth}（${castellan.name}）`)
         break
       }
       case 'balanced': {
-        // バランス型: 全て少しずつ（1〜2 × 政治ボーナス）
-        const growth = Math.floor((1 + Math.random()) * politicsBonus)
+        // バランス型: 全て少しずつ（2〜3 × 政治ボーナス）
+        const growth = Math.floor((2 + Math.random()) * politicsBonus)
         castle.agriculture = Math.min(100, castle.agriculture + growth)
         castle.commerce = Math.min(100, castle.commerce + growth)
         castle.defense = Math.min(100, castle.defense + growth)
-        castle.soldiers += Math.floor(growth * 10)
+        const soldierGrowth = Math.floor(growth * 15)
+        castle.soldiers += soldierGrowth
+        changes.push(`⚖️ ${castle.name}: 農商防各+${growth} 兵+${soldierGrowth}（${castellan.name}）`)
         break
       }
     }

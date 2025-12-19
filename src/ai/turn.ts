@@ -58,6 +58,12 @@ function getPersonalityHints(personality: PersonalityTag[]): string {
 
 // === AI大名のターン実行 ===
 
+// AI行動決定の結果（実行前）
+export interface AIDecision {
+  toolName: string | null
+  toolParams: Record<string, unknown>
+}
+
 export interface AITurnResult {
   actions: {
     tool: string
@@ -68,10 +74,11 @@ export interface AITurnResult {
   summary: string
 }
 
-export async function executeAITurn(
+// AIの行動を決定する（実行はしない）
+export async function decideAIAction(
   state: GameState,
   clanId: string,
-): Promise<AITurnResult> {
+): Promise<AIDecision> {
   const clan = state.clanCatalog.get(clanId)
   if (!clan) {
     throw new Error(`Clan not found: ${clanId}`)
@@ -80,8 +87,6 @@ export async function executeAITurn(
   if (!leader) {
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
-
-  const results: AITurnResult['actions'] = []
 
   // 自軍の城IDを取得
   const ownCastleIds = clan.castleIds
@@ -158,6 +163,11 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
 
   const contextPrompt = buildGameContextPrompt(state, clanId)
 
+  // ルールベースで行動を決定（LLMに頼らず確実に行動する）
+  let toolName: string | null = null
+  let toolParams: Record<string, unknown> = {}
+
+  // LLMで行動を決定してみる
   try {
     const response = await ai.models.generateContent({
       model: MODEL_LITE,
@@ -168,8 +178,6 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
     })
 
     const text = response.text ?? ''
-
-    // JSONをパース
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       const decision = JSON.parse(jsonMatch[0]) as {
@@ -178,12 +186,10 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
       }
 
       if (decision.action && decision.action !== 'none') {
-        let toolName: string | null = null
-        let toolParams = decision.params
-
         switch (decision.action) {
           case 'recruit':
             toolName = 'recruit_soldiers'
+            toolParams = decision.params
             break
           case 'develop': {
             const devType = decision.params.type as string
@@ -198,12 +204,8 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
             break
           }
           case 'attack':
-            toolName = 'attack'
-            // 攻撃可能な城がなければスキップ
-            if (attackTargets.length === 0) {
-              toolName = null
-            } else {
-              // soldierCountがなければデフォルト値
+            if (attackTargets.length > 0) {
+              toolName = 'attack'
               const fromCastle = state.castleCatalog.get(
                 decision.params.fromCastleId as string,
               )
@@ -215,34 +217,52 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
             break
           case 'diplomacy':
             toolName = 'propose_alliance'
+            toolParams = decision.params
             break
-        }
-
-        if (toolName) {
-          const { result, narrative } = executeToolCall(
-            state,
-            clanId,
-            toolName,
-            toolParams,
-          )
-
-          results.push({
-            tool: toolName,
-            args: toolParams,
-            narrative,
-            success: result?.success ?? false,
-          })
         }
       }
     }
   } catch {
-    // パース失敗時は何もしない
+    // パース失敗時はフォールバックへ
   }
 
-  return {
-    actions: results,
-    summary: results.length > 0 ? '行動完了' : '様子見',
+  // LLMが行動を返さなかった場合、ルールベースで強制行動
+  if (!toolName) {
+    // 優先順位: 1.兵力不足なら徴兵 2.金不足なら開発 3.攻撃可能なら攻撃 4.それ以外は開発
+    if (totalSoldiers < 500 && clan.gold >= 300) {
+      // 徴兵
+      toolName = 'recruit_soldiers'
+      toolParams = { castleId: firstCastleId, count: Math.min(300, Math.floor(clan.gold / 2)) }
+    } else if (clan.gold < 1000) {
+      // 商業開発で金を稼ぐ
+      toolName = 'develop_commerce'
+      toolParams = { castleId: firstCastleId, investment: Math.min(500, clan.gold) }
+    } else if (totalSoldiers >= 3000) {
+      // 攻撃可能で兵力十分なら攻撃
+      const target = attackTargets[0]
+      if (target) {
+        const targetCastle = state.castleCatalog.get(target.to)
+        const fromCastle = state.castleCatalog.get(target.from)
+        if (targetCastle && fromCastle && fromCastle.soldiers > targetCastle.soldiers * 1.2) {
+          toolName = 'attack'
+          toolParams = {
+            fromCastleId: target.from,
+            targetCastleId: target.to,
+            soldierCount: Math.floor(fromCastle.soldiers * 0.7),
+          }
+        }
+      }
+    }
+
+    // それでも行動が決まらなければ農業開発
+    if (!toolName && clan.gold >= 100) {
+      toolName = 'develop_agriculture'
+      toolParams = { castleId: firstCastleId, investment: Math.min(500, clan.gold) }
+    }
   }
+
+  // 決定のみを返す（実行は呼び出し側で行う）
+  return { toolName, toolParams }
 }
 
 // === プレイヤーコマンド実行 ===

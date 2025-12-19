@@ -1,8 +1,8 @@
 // ゲームアクション用カスタムフック（zustand store 使用版）
 
 import { useCallback, useRef } from 'react'
-import { executeAITurn } from '../../ai/index.js'
-import { checkVictory, processTurnEnd } from '../../engine.js'
+import { decideAIAction, type AITurnResult } from '../../ai/index.js'
+import { checkVictory } from '../../engine.js'
 import { useGameStore } from '../../store/gameStore.js'
 import type { Screen } from '../types.js'
 import type { ScreenData } from './useGameNavigation.js'
@@ -28,8 +28,9 @@ export function useGameActions({
     resetActions,
     addAiResult,
     clearAiResults,
-    updateGameState,
     getState,
+    executeToolCall,
+    processTurnEnd,
   } = useGameStore()
 
   // processEndTurn への参照を保持（循環依存を解消）
@@ -73,18 +74,44 @@ export function useGameActions({
     }
 
     try {
-      for (const clan of state.clanCatalog.values()) {
-        if (clan.id === playerClan.id) continue
+      // AI大名の行動を順番に処理
+      const clanIds = [...state.clanCatalog.keys()].filter(
+        (id) => id !== playerClan.id,
+      )
+
+      for (const clanId of clanIds) {
+        const clan = state.clanCatalog.get(clanId)
+        if (!clan) continue
 
         setMessage(`${clan.name}が思考中...`)
-        const result = await executeAITurn(state, clan.id)
-        addAiResult(clan.name, result)
+
+        // AIの行動を決定（状態は読み取りのみ）
+        const currentState = getState()
+        const decision = await decideAIAction(currentState, clanId)
+
+        // 決定した行動を store 経由で実行（immer の draft を通じて）
+        const aiResult: AITurnResult = { actions: [], summary: '様子見' }
+        if (decision.toolName) {
+          const { result, narrative } = executeToolCall(
+            clanId,
+            decision.toolName,
+            decision.toolParams,
+          )
+          aiResult.actions.push({
+            tool: decision.toolName,
+            args: decision.toolParams,
+            narrative,
+            success: result?.success ?? false,
+          })
+          aiResult.summary = '行動完了'
+        }
+
+        // AI の結果を表示用に保存
+        addAiResult(clan.name, aiResult)
       }
 
       // ターン終了処理（immer の draft を通じて実行）
-      updateGameState((draft) => {
-        processTurnEnd(draft)
-      })
+      processTurnEnd()
 
       const currentState = getState()
       setMessage(`ターン${currentState.turn}開始`)
@@ -112,7 +139,8 @@ export function useGameActions({
     getState,
     setMessage,
     addAiResult,
-    updateGameState,
+    executeToolCall,
+    processTurnEnd,
     resetActions,
     resetToMain,
   ])

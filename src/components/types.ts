@@ -5,6 +5,7 @@ export type Screen =
   | 'status'
   | 'status_list'
   | 'status_map'
+  | 'castle_select' // 城選択画面
   | 'delegation' // 委任設定画面
   | 'council'
   | 'letters'

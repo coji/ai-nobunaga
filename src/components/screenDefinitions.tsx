@@ -9,6 +9,7 @@ import type { Screen } from './types.js'
 import { MainMenu } from './menus/index.js'
 import {
   AITurnScreen,
+  CastleSelectScreen,
   CouncilScreen,
   DelegationScreen,
   LettersScreen,
@@ -92,21 +93,33 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
   status_list: {
     render: ({ selectedIndex }) => <StatusScreen selectedIndex={selectedIndex} />,
     onSelect: (ctx) => {
-      // 選択した勢力が自国なら委任設定画面へ
+      // 選択した勢力が自国なら城選択画面へ
       const clans = [...ctx.state.clanCatalog.values()]
       const selectedClan = clans[ctx.selectedIndex]
       if (selectedClan && selectedClan.id === ctx.state.playerClanId) {
-        // 自国の城リストから最初の城を選択（後で城選択機能を追加可能）
-        const firstCastleId = selectedClan.castleIds[0]
-        if (firstCastleId) {
-          ctx.pushScreen('delegation', { castleId: firstCastleId })
-        }
+        ctx.pushScreen('castle_select')
       }
     },
   },
 
   status_map: {
     render: () => <MapScreen />,
+  },
+
+  castle_select: {
+    render: ({ selectedIndex }) => (
+      <CastleSelectScreen selectedIndex={selectedIndex} />
+    ),
+    onSelect: (ctx) => {
+      // 選択した城の委任設定画面へ
+      const playerClan = ctx.state.clanCatalog.get(ctx.state.playerClanId)
+      if (playerClan) {
+        const castleId = playerClan.castleIds[ctx.selectedIndex]
+        if (castleId) {
+          ctx.pushScreen('delegation', { castleId })
+        }
+      }
+    },
   },
 
   delegation: {

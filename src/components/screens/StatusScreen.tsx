@@ -61,6 +61,11 @@ export function StatusScreen({ selectedIndex }: Props) {
           )
         }
 
+        // 所属武将一覧を取得（当主除く）
+        const retainers = [...state.bushoCatalog.values()].filter(
+          (b) => b.clanId === clan.id && b.id !== clan.leaderId,
+        )
+
         // 展開された詳細表示
         return (
           <Box key={clan.id} flexDirection="column" marginY={1}>
@@ -68,7 +73,7 @@ export function StatusScreen({ selectedIndex }: Props) {
               ▶ {clan.name} {isPlayer && '(あなた)'}
             </Text>
             <Text>
-              　当主: {leader?.name} | 金: {clan.gold} | 兵糧: {clan.food}
+              　当主: {leader?.name} | 金: {clan.gold} | 兵糧: {clan.food} | 武将: {retainers.length + 1}人
             </Text>
             {clan.castleIds.map((id) => {
               const castle = state.castleCatalog.get(id)
@@ -98,6 +103,28 @@ export function StatusScreen({ selectedIndex }: Props) {
                 </Text>
               )
             })}
+            {/* 武将一覧（プレイヤー勢力のみ詳細表示） */}
+            {isPlayer && retainers.length > 0 && (
+              <Box flexDirection="column" marginTop={1}>
+                <Text dimColor>　── 家臣 ──</Text>
+                {retainers.map((busho) => {
+                  const loyaltyColor = getLoyaltyColor(busho.emotions.loyalty)
+                  // 城主かどうか確認
+                  const isCastellan = clan.castleIds.some((cid) => {
+                    const c = state.castleCatalog.get(cid)
+                    return c?.castellanId === busho.id
+                  })
+                  return (
+                    <Text key={busho.id}>
+                      　　{busho.name}
+                      {isCastellan && <Text color="cyan">（城主）</Text>}
+                      : 政{busho.politics} 武{busho.warfare} 知{busho.intelligence} 魅{busho.charisma}
+                      {' '}忠誠<Text color={loyaltyColor}>{busho.emotions.loyalty}</Text>
+                    </Text>
+                  )
+                })}
+              </Box>
+            )}
             {!isPlayer && relation && (
               <Text dimColor>　関係: {getDiplomacyLabel(relation.type)}</Text>
             )}
