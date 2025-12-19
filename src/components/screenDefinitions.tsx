@@ -90,8 +90,12 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
   },
 
   status_list: {
-    render: ({ state, playerClanId }) => (
-      <StatusScreen state={state} playerClanId={playerClanId} />
+    render: ({ state, playerClanId, selectedIndex }) => (
+      <StatusScreen
+        state={state}
+        playerClanId={playerClanId}
+        selectedIndex={selectedIndex}
+      />
     ),
   },
 

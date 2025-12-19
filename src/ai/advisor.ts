@@ -1,7 +1,7 @@
 // 軍師AI・書状生成・ナレーション
 
 import type { GameState, Letter } from '../types.js'
-import { ai, MODEL } from './client.js'
+import { ai, MODEL, THINKING } from './client.js'
 import { buildGameContextPrompt } from './prompts.js'
 
 // === 評定（複数武将による議論） ===
@@ -132,7 +132,10 @@ ${busho.name}として、自分の性格・専門性に基づいて意見を述�
         const response = await ai.models.generateContent({
           model: MODEL,
           contents: prompt,
-          config: { systemInstruction: systemPrompt },
+          config: {
+            systemInstruction: systemPrompt,
+            thinkingConfig: { thinkingLevel: THINKING.COUNCIL },
+          },
         })
 
         const text = response.text ?? ''
@@ -453,7 +456,10 @@ JSON形式で出力:
         const response = await ai.models.generateContent({
           model: MODEL,
           contents: prompt,
-          config: { systemInstruction: systemPrompt },
+          config: {
+            systemInstruction: systemPrompt,
+            thinkingConfig: { thinkingLevel: THINKING.COUNCIL },
+          },
         })
 
         const text = response.text ?? ''
@@ -502,6 +508,9 @@ JSON形式で出力:
 ${stmt.bushoName}の発言:「${stmt.statement}」
 
 25文字以内で簡潔に返答せよ。返答のみを出力。`,
+            config: {
+              thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
+            },
           })
           delegatedStatements.push({
             bushoId: delegatedBusho.id,
@@ -686,6 +695,9 @@ JSON形式で出力:
     const response = await ai.models.generateContent({
       model: MODEL,
       contents: prompt,
+      config: {
+        thinkingConfig: { thinkingLevel: THINKING.COUNCIL },
+      },
     })
 
     const text = response.text ?? ''
@@ -743,6 +755,9 @@ export async function generateNarrative(
     const response = await ai.models.generateContent({
       model: MODEL,
       contents: prompt,
+      config: {
+        thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
+      },
     })
     return response.text ?? result
   } catch {
@@ -838,6 +853,9 @@ JSON形式で出力:
       const response = await ai.models.generateContent({
         model: MODEL,
         contents: prompt,
+        config: {
+          thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
+        },
       })
 
       const text = response.text ?? ''
@@ -949,6 +967,9 @@ JSON形式のみで出力:
     const response = await ai.models.generateContent({
       model: MODEL,
       contents: prompt,
+      config: {
+        thinkingConfig: { thinkingLevel: THINKING.LETTER },
+      },
     })
 
     const text = response.text ?? ''

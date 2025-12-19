@@ -1,7 +1,7 @@
 // AIターン・プレイヤーコマンド実行
 
 import type { GameState } from '../types.js'
-import { ai, MODEL, MODEL_LITE } from './client.js'
+import { ai, MODEL, THINKING } from './client.js'
 import { executeToolCall } from './executor.js'
 import {
   buildGameContextPrompt,
@@ -67,10 +67,11 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy|none","params":{...}}
 
   try {
     const response = await ai.models.generateContent({
-      model: MODEL_LITE,
+      model: MODEL,
       contents: `${contextPrompt}\n\n1つの行動をJSONで選択せよ。`,
       config: {
         systemInstruction: systemPrompt,
+        thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
       },
     })
 
@@ -190,6 +191,7 @@ export async function executePlayerCommand(
     contents: userPrompt,
     config: {
       systemInstruction: systemPrompt,
+      thinkingConfig: { thinkingLevel: THINKING.PLAYER_COMMAND },
       tools: [
         {
           functionDeclarations: gameTools.filter((t) => t.name !== 'end_turn'),
@@ -229,6 +231,9 @@ export async function executePlayerCommand(
 行動: ${toolName}
 結果: ${narrative}
 成功: ${result?.success ? 'はい' : 'いいえ'}`,
+    config: {
+      thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
+    },
   })
 
   return {
