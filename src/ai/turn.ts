@@ -1,7 +1,7 @@
 // AIターン・プレイヤーコマンド実行
 
 import type { GameState } from '../types.js'
-import { ai, MODEL, THINKING } from './client.js'
+import { ai, MODEL, MODEL_LITE, THINKING } from './client.js'
 import { executeToolCall } from './executor.js'
 import {
   buildGameContextPrompt,
@@ -67,11 +67,10 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy|none","params":{...}}
 
   try {
     const response = await ai.models.generateContent({
-      model: MODEL,
+      model: MODEL_LITE,
       contents: `${contextPrompt}\n\n1つの行動をJSONで選択せよ。`,
       config: {
         systemInstruction: systemPrompt,
-        thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
       },
     })
 
@@ -225,15 +224,12 @@ export async function executePlayerCommand(
 
   // 結果に対するAIのコメントを生成
   const commentResponse = await ai.models.generateContent({
-    model: MODEL,
+    model: MODEL_LITE,
     contents: `あなたは戦国時代の軍師です。以下の行動結果について、${leader.name}に簡潔に報告してください（50文字以内）。
 
 行動: ${toolName}
 結果: ${narrative}
 成功: ${result?.success ? 'はい' : 'いいえ'}`,
-    config: {
-      thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
-    },
   })
 
   return {

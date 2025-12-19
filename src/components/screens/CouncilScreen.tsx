@@ -4,7 +4,7 @@ import { Box, Text, useInput } from 'ink'
 import Spinner from 'ink-spinner'
 import TextInput from 'ink-text-input'
 import { useState } from 'react'
-import { ai, MODEL } from '../../ai/client.js'
+import { ai, MODEL_LITE } from '../../ai/client.js'
 import { executeToolCall } from '../../ai/executor.js'
 import {
   conductCouncilRound,
@@ -164,7 +164,7 @@ ${enemyInfo.join('\n')}
 
     try {
       const response = await ai.models.generateContent({
-        model: MODEL,
+        model: MODEL_LITE,
         contents: prompt,
       })
       setReportContent(response.text ?? '報告を生成できませんでした。')

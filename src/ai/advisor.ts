@@ -1,7 +1,7 @@
 // 軍師AI・書状生成・ナレーション
 
 import type { GameState, Letter } from '../types.js'
-import { ai, MODEL, THINKING } from './client.js'
+import { ai, MODEL, MODEL_LITE, THINKING } from './client.js'
 import { buildGameContextPrompt } from './prompts.js'
 
 // === 評定（複数武将による議論） ===
@@ -502,15 +502,12 @@ JSON形式で出力:
         // 簡単な返答を生成
         try {
           const response = await ai.models.generateContent({
-            model: MODEL,
+            model: MODEL_LITE,
             contents: `あなたは戦国武将「${delegatedBusho.name}」です。評定で${stmt.bushoName}から意見を求められました。
 議題: ${topic}
 ${stmt.bushoName}の発言:「${stmt.statement}」
 
 25文字以内で簡潔に返答せよ。返答のみを出力。`,
-            config: {
-              thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
-            },
           })
           delegatedStatements.push({
             bushoId: delegatedBusho.id,
@@ -753,11 +750,8 @@ export async function generateNarrative(
 
   try {
     const response = await ai.models.generateContent({
-      model: MODEL,
+      model: MODEL_LITE,
       contents: prompt,
-      config: {
-        thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
-      },
     })
     return response.text ?? result
   } catch {
@@ -851,11 +845,8 @@ JSON形式で出力:
 
     try {
       const response = await ai.models.generateContent({
-        model: MODEL,
+        model: MODEL_LITE,
         contents: prompt,
-        config: {
-          thinkingConfig: { thinkingLevel: THINKING.AI_TURN },
-        },
       })
 
       const text = response.text ?? ''

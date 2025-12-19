@@ -99,11 +99,22 @@ function executeDomesticAction(
   }
   const changes: string[] = []
 
-  // 君主の政治力で効果が変動（政治50で1.0倍、100で1.5倍、1で0.5倍）
-  const politicsModifier = 0.5 + leader.politics / 100
+  // 内政担当を取得（城主 > 当主）
+  const administrator = castle.castellanId
+    ? state.bushoCatalog.get(castle.castellanId)
+    : leader
+  const adminPolitics = administrator?.politics ?? leader.politics
+
+  // 担当者の政治力で効果が変動（政治50で1.0倍、100で1.5倍、1で0.5倍）
+  const politicsModifier = 0.5 + adminPolitics / 100
   // ランダム要素（0.8〜1.2倍）
   const randomModifier = 0.8 + Math.random() * 0.4
   let effectModifier = politicsModifier * randomModifier
+
+  // 担当者名を表示（城主がいる場合）
+  if (administrator && administrator.id !== leader.id) {
+    changes.push(`内政担当: ${administrator.name}（政治${adminPolitics}）`)
+  }
 
   // 大成功・大失敗判定（内政は基本成功だが、稀に大成功/大失敗）
   const grade = rollForGrade(true)
@@ -434,13 +445,23 @@ function executeMilitaryAction(
   }
   const changes: string[] = []
 
-  // 君主の武勇で効果が変動（武勇50で1.0倍、100で1.5倍）
-  const warfareModifier = 0.5 + leader.warfare / 100
-  // ランダム要素（0.8〜1.2倍）
-  const randomModifier = 0.8 + Math.random() * 0.4
-  let effectModifier = warfareModifier * randomModifier
+  // 軍事担当を取得（城主 > 当主）
+  const commander = targetCastle.castellanId
+    ? state.bushoCatalog.get(targetCastle.castellanId)
+    : leader
 
   if (action.type === 'recruit_soldiers') {
+    // 徴兵は魅力で効果が変動
+    const charisma = commander?.charisma ?? leader.charisma
+    const charismaModifier = 0.5 + charisma / 100
+    const randomModifier = 0.8 + Math.random() * 0.4
+    let effectModifier = charismaModifier * randomModifier
+
+    // 担当者名を表示（城主がいる場合）
+    if (commander && commander.id !== leader.id) {
+      changes.push(`徴兵担当: ${commander.name}（魅力${charisma}）`)
+    }
+
     const count = action.value || 0
     const foodCost = count * 3
     clan.food = Math.max(0, clan.food - foodCost)
@@ -479,6 +500,17 @@ function executeMilitaryAction(
   }
 
   if (action.type === 'fortify') {
+    // 城修築は政治力で効果が変動
+    const politics = commander?.politics ?? leader.politics
+    const politicsModifier = 0.5 + politics / 100
+    const randomModifier = 0.8 + Math.random() * 0.4
+    let effectModifier = politicsModifier * randomModifier
+
+    // 担当者名を表示（城主がいる場合）
+    if (commander && commander.id !== leader.id) {
+      changes.push(`修築担当: ${commander.name}（政治${politics}）`)
+    }
+
     const cost = action.value || 0
     clan.gold = Math.max(0, clan.gold - cost)
 
@@ -525,6 +557,27 @@ function executeMilitaryAction(
     const initialTargetSoldiers = targetCastle.soldiers
     fromCastle.soldiers = Math.max(0, fromCastle.soldiers - soldierCount)
 
+    // 攻撃側の指揮官を取得（城主 > 当主）
+    const attackCommander = fromCastle.castellanId
+      ? state.bushoCatalog.get(fromCastle.castellanId)
+      : leader
+    // 防御側の指揮官を取得（城主 > 当主）
+    const defenderClan = state.clanCatalog.get(targetCastle.ownerId)
+    const defenderLeader = defenderClan
+      ? state.bushoCatalog.get(defenderClan.leaderId)
+      : undefined
+    const defenseCommander = targetCastle.castellanId
+      ? state.bushoCatalog.get(targetCastle.castellanId)
+      : defenderLeader
+
+    // 指揮官の武勇で攻撃力・防御力にボーナス（武勇50で1.0倍、100で1.5倍）
+    const attackCommanderBonus = attackCommander
+      ? 0.5 + attackCommander.warfare / 100
+      : 1.0
+    const defenseCommanderBonus = defenseCommander
+      ? 0.5 + defenseCommander.warfare / 100
+      : 1.0
+
     // 戦闘の大成功・大失敗判定（攻撃前に判定）
     const battleRoll = Math.random()
     let battleGrade: ResultGrade = 'success'
@@ -542,14 +595,28 @@ function executeMilitaryAction(
       changes.push('【大失敗】敵の伏兵に遭遇！大損害')
     }
 
-    // 戦闘計算（武勇で攻撃力ボーナス）
+    // 指揮官名を表示
+    if (attackCommander && attackCommander.id !== leader.id) {
+      changes.push(
+        `攻撃指揮: ${attackCommander.name}（武勇${attackCommander.warfare}）`,
+      )
+    }
+    if (defenseCommander) {
+      changes.push(
+        `防御指揮: ${defenseCommander.name}（武勇${defenseCommander.warfare}）`,
+      )
+    }
+
+    // 戦闘計算（指揮官の武勇で攻撃力・防御力ボーナス）
     const attackPower =
       soldierCount *
       (1 + action.riskTolerance * 0.3) *
-      effectModifier *
-      battleModifier
+      battleModifier *
+      attackCommanderBonus
     const defensePower =
-      targetCastle.soldiers * (1 + targetCastle.defense / 100)
+      targetCastle.soldiers *
+      (1 + targetCastle.defense / 100) *
+      defenseCommanderBonus
 
     let attackerLosses = Math.floor(
       soldierCount * 0.2 * (defensePower / attackPower),
@@ -570,7 +637,72 @@ function executeMilitaryAction(
     const remainingAttackers = Math.max(0, soldierCount - attackerLosses)
     targetCastle.soldiers = Math.max(0, targetCastle.soldiers - defenderLosses)
 
-    if (targetCastle.soldiers === 0 && remainingAttackers > 0) {
+    // 敗北判定: 攻撃成功 or 攻撃失敗で勝敗が決まる
+    const attackerWon = targetCastle.soldiers === 0 && remainingAttackers > 0
+
+    // 武将討死・捕縛判定
+    const checkGeneralFate = (
+      general: typeof attackCommander,
+      isLoser: boolean,
+      side: '攻撃' | '防御',
+    ) => {
+      if (!general) return
+      // 当主は討死しない（捕縛のみ、低確率）
+      const isLeader =
+        (side === '攻撃' && general.id === leader.id) ||
+        (side === '防御' && defenderLeader && general.id === defenderLeader.id)
+
+      if (isLoser) {
+        const fateRoll = Math.random()
+        // 敗北側: 15%討死、10%捕縛
+        if (!isLeader && fateRoll < 0.15) {
+          // 討死
+          state.bushoCatalog.delete(general.id)
+          // 城主から外す
+          if (side === '攻撃' && fromCastle.castellanId === general.id) {
+            fromCastle.castellanId = null
+          }
+          if (side === '防御' && targetCastle.castellanId === general.id) {
+            targetCastle.castellanId = null
+          }
+          changes.push(`【討死】${general.name}が戦死！`)
+        } else if (fateRoll < 0.25) {
+          // 捕縛（当主の場合は5%のみ）
+          if (isLeader && fateRoll >= 0.05) return
+          // 勝者側に寝返り（捕縛→登用）
+          const newClanId = side === '攻撃' ? targetCastle.ownerId : clanId
+          general.clanId = newClanId
+          general.emotions.loyalty = 40 // 捕縛されたので忠誠低め
+          // 城主から外す
+          if (side === '攻撃' && fromCastle.castellanId === general.id) {
+            fromCastle.castellanId = null
+          }
+          if (side === '防御' && targetCastle.castellanId === general.id) {
+            targetCastle.castellanId = null
+          }
+          const captor = side === '攻撃' ? defenderClan?.name : clan.name
+          changes.push(`【捕縛】${general.name}が${captor}に捕らえられた`)
+        }
+      } else {
+        // 勝利側でも3%で討死（流れ矢など）
+        if (!isLeader && Math.random() < 0.03) {
+          state.bushoCatalog.delete(general.id)
+          if (side === '攻撃' && fromCastle.castellanId === general.id) {
+            fromCastle.castellanId = null
+          }
+          if (side === '防御' && targetCastle.castellanId === general.id) {
+            targetCastle.castellanId = null
+          }
+          changes.push(`【討死】${general.name}が流れ矢に倒れた…`)
+        }
+      }
+    }
+
+    // 武将の運命を判定
+    checkGeneralFate(attackCommander, !attackerWon, '攻撃')
+    checkGeneralFate(defenseCommander, attackerWon, '防御')
+
+    if (attackerWon) {
       // 城を奪取
       const previousOwner = targetCastle.ownerId
       const previousClan = state.clanCatalog.get(previousOwner)
@@ -662,6 +794,24 @@ function executeIntrigueAction(
   }
   const changes: string[] = []
 
+  // 謀略担当を取得（配下で最も知略が高い武将）
+  const clanBusho = [...state.bushoCatalog.values()].filter(
+    (b) => b.clanId === clanId && b.id !== leader.id,
+  )
+  const spymaster =
+    clanBusho.length > 0
+      ? clanBusho.reduce((best, b) =>
+          b.intelligence > best.intelligence ? b : best,
+        )
+      : null
+  const intrigueAgent = spymaster ?? leader
+  const agentIntelligence = intrigueAgent.intelligence
+
+  // 担当者名を表示（当主以外の場合）
+  if (intrigueAgent.id !== leader.id) {
+    changes.push(`謀略担当: ${intrigueAgent.name}（知略${agentIntelligence}）`)
+  }
+
   const costs: Record<IntrigueAction['type'], number> = {
     bribe: 500,
     assassinate: 1000,
@@ -670,8 +820,8 @@ function executeIntrigueAction(
   }
   clan.gold = Math.max(0, clan.gold - costs[action.type])
 
-  // 君主の知略で成功率が変動（知略50で+0%、100で+25%）
-  const intelligenceBonus = (leader.intelligence - 50) / 200
+  // 担当者の知略で成功率が変動（知略50で+0%、100で+25%）
+  const intelligenceBonus = (agentIntelligence - 50) / 200
   // ランダム要素（-0.1〜+0.1）
   const randomBonus = (Math.random() - 0.5) * 0.2
 
@@ -719,12 +869,56 @@ function executeIntrigueAction(
             target.clanId = clanId
             target.emotions.loyalty = 60 // 新しい主君への初期忠誠
 
-            if (grade === 'critical_success') {
-              changes.push(`【大成功】${target.name}が寝返った！我が軍の配下に`)
-            } else {
-              changes.push(
-                `${target.name}が寝返り！忠誠${target.emotions.loyalty + loyaltyDrop}→${target.emotions.loyalty}以下で決意`,
-              )
+            // 城主だった場合、城ごと寝返る！
+            let castleDefected = false
+            for (const [, castle] of state.castleCatalog) {
+              if (
+                castle.castellanId === target.id &&
+                castle.ownerId === originalClanId
+              ) {
+                // 城を奪取
+                if (originalClan) {
+                  originalClan.castleIds = originalClan.castleIds.filter(
+                    (id) => id !== castle.id,
+                  )
+                }
+                castle.ownerId = clanId
+                clan.castleIds.push(castle.id)
+                castleDefected = true
+
+                // 怨恨を記録
+                const grudge: GrudgeEvent = {
+                  id: `grudge_${state.turn}_${clanId}_${originalClanId}_defection`,
+                  turn: state.turn,
+                  actorId: clanId,
+                  targetId: originalClanId || '',
+                  type: 'betrayal',
+                  description: `${target.name}が${castle.name}ごと寝返り`,
+                  emotionImpact: { respect: -30, discontent: 40 },
+                }
+                state.grudgeHistory.push(grudge)
+
+                if (grade === 'critical_success') {
+                  changes.push(
+                    `【大成功】${target.name}が${castle.name}ごと寝返った！`,
+                  )
+                } else {
+                  changes.push(
+                    `${target.name}が${castle.name}ごと寝返り！（兵${castle.soldiers}も獲得）`,
+                  )
+                }
+                break // 1人の城主は1城のみ
+              }
+            }
+
+            if (!castleDefected) {
+              if (grade === 'critical_success') {
+                changes.push(
+                  `【大成功】${target.name}が寝返った！我が軍の配下に`,
+                )
+              } else {
+                changes.push(`${target.name}が寝返り！`)
+              }
             }
           } else if (grade === 'critical_success') {
             changes.push(

@@ -59,7 +59,17 @@ src/
 
 **Council System**: Multi-round discussions where busho (retainers) debate topics based on personality tags, then propose concrete actions filtered by topic category.
 
-**Defection Mechanic**: Bribe action can cause busho to switch clans if loyalty drops to 30 or below (leaders cannot defect).
+**Defection Mechanic**: Bribe action can cause busho to switch clans if loyalty drops to 30 or below (leaders cannot defect). If the defecting busho is a castellan, the castle also defects with them.
+
+**Castellan System**: Castle castellan's stats affect all actions at that castle:
+
+- Agriculture/Commerce development: castellan's politics
+- Recruitment: castellan's charisma
+- Fortification: castellan's politics
+- Combat: castellan's warfare (both attack and defense)
+- Intrigue: highest intelligence busho in the clan is automatically selected as spymaster
+
+**General Death/Capture**: In battle, defeated generals have a 15% chance of death and 10% chance of capture. Even victors have a 3% chance of dying to stray arrows. Leaders cannot die (only be captured at 5% rate).
 
 ### Type System Highlights
 
@@ -70,8 +80,8 @@ src/
 
 ### AI Models
 
-- `MODEL` (gemini-flash-latest): Used for council discussions, narrative generation
-- `MODEL_LITE` (gemini-2.0-flash-lite): Used for AI daimyo turn decisions (faster/cheaper)
+- `MODEL` (gemini-3-flash-preview): Used for all AI operations
+- `THINKING` levels: MINIMAL (AI turns), LOW (player commands, letters), MEDIUM (council)
 
 ## Language
 

@@ -39,8 +39,8 @@ export function StatusScreen({ state, playerClanId, selectedIndex }: Props) {
               <Text dimColor={!isPlayer}>
                 {' '}
                 {clan.name}
-                {isPlayer && '*'} - {leader?.name} | 城{clan.castleIds.length} 兵
-                {totalSoldiers}
+                {isPlayer && '*'} - {leader?.name} | 城{clan.castleIds.length}{' '}
+                兵{totalSoldiers}
                 {relation && ` [${getDiplomacyLabel(relation.type)}]`}
               </Text>
             </Box>
