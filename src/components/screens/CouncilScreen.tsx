@@ -377,6 +377,8 @@ ${enemyInfo.join('\n')}
     setIsCustomInput(false)
     setInput('')
     setShowDiscussionLog(false)
+    setReportContent(null)
+    setSelectedProposal(0)
   }
 
   return (
