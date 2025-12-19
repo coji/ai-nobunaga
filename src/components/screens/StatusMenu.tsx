@@ -1,12 +1,12 @@
 // 勢力情報サブメニュー
 
-import { Box, Text } from "ink";
+import { Box, Text } from 'ink'
 
 interface Props {
-  selectedIndex: number;
+  selectedIndex: number
 }
 
-const STATUS_OPTIONS = ["勢力一覧", "地図表示"];
+const STATUS_OPTIONS = ['勢力一覧', '地図表示']
 
 export function StatusMenu({ selectedIndex }: Props) {
   return (
@@ -17,10 +17,10 @@ export function StatusMenu({ selectedIndex }: Props) {
       {STATUS_OPTIONS.map((option, index) => (
         <Text
           key={option}
-          color={index === selectedIndex ? "cyan" : "white"}
+          color={index === selectedIndex ? 'cyan' : 'white'}
           bold={index === selectedIndex}
         >
-          {index === selectedIndex ? "▶ " : "  "}
+          {index === selectedIndex ? '▶ ' : '  '}
           {option}
         </Text>
       ))}
@@ -28,5 +28,5 @@ export function StatusMenu({ selectedIndex }: Props) {
         <Text dimColor>[Enter] 選択　[ESC] 戻る</Text>
       </Box>
     </Box>
-  );
+  )
 }

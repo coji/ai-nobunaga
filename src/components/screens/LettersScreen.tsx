@@ -1,15 +1,15 @@
 // 書状画面コンポーネント
 
-import { Box, Text } from "ink";
-import type { GameState, Letter } from "../../types.js";
+import { Box, Text } from 'ink'
+import type { GameState, Letter } from '../../types.js'
 
 interface Props {
-  state: GameState;
-  currentLetter: Letter | null;
+  state: GameState
+  currentLetter: Letter | null
 }
 
 export function LettersScreen({ state, currentLetter }: Props) {
-  const letters = state.letters.slice(-5);
+  const letters = state.letters.slice(-5)
 
   return (
     <Box flexDirection="column">
@@ -24,7 +24,7 @@ export function LettersScreen({ state, currentLetter }: Props) {
           paddingX={1}
         >
           <Text dimColor>
-            {state.clanCatalog.get(currentLetter.fromClanId)?.name} →{" "}
+            {state.clanCatalog.get(currentLetter.fromClanId)?.name} →{' '}
             {state.clanCatalog.get(currentLetter.toClanId)?.name}
           </Text>
           <Text>{currentLetter.greeting}</Text>
@@ -40,13 +40,13 @@ export function LettersScreen({ state, currentLetter }: Props) {
         letters.map((letter) => (
           <Box key={letter.id} marginY={1}>
             <Text>
-              ターン{letter.turn}:{" "}
-              {state.clanCatalog.get(letter.fromClanId)?.name} →{" "}
+              ターン{letter.turn}:{' '}
+              {state.clanCatalog.get(letter.fromClanId)?.name} →{' '}
               {state.clanCatalog.get(letter.toClanId)?.name} - {letter.summary}
             </Text>
           </Box>
         ))
       )}
     </Box>
-  );
+  )
 }

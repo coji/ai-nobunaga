@@ -10,13 +10,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Development (with hot reload via tsx)
-npm run dev
+pnpm dev
 
 # Build TypeScript to dist/
-npm run build
+pnpm build
 
 # Run production build
-npm start
+pnpm start
 ```
 
 ## Required Environment
@@ -27,7 +27,7 @@ Copy `.env.example` to `.env` and set `GEMINI_API_KEY`.
 
 ### Core Layers
 
-```
+```sh
 src/
 ├── index.tsx           # Entry point - renders GameUI with React/Ink
 ├── types.ts            # All game data types (Busho, Clan, Castle, Actions, etc.)

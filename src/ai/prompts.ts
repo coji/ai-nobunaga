@@ -1,65 +1,77 @@
 // プロンプト生成
 
-import type { Busho, GameState } from "../types.js";
+import type { Busho, GameState } from '../types.js'
 
 export function buildGameContextPrompt(
   state: GameState,
-  clanId: string
+  clanId: string,
 ): string {
-  const clan = state.clanCatalog.get(clanId)!;
-  const leader = state.bushoCatalog.get(clan.leaderId)!;
+  const clan = state.clanCatalog.get(clanId)
+  if (!clan) {
+    throw new Error(`Clan not found: ${clanId}`)
+  }
+  const leader = state.bushoCatalog.get(clan.leaderId)
+  if (!leader) {
+    throw new Error(`Leader not found: ${clan.leaderId}`)
+  }
 
   const ownCastles = clan.castleIds
     .map((id) => {
-      const c = state.castleCatalog.get(id)!;
-      return `  - ${c.name}(ID:${c.id}): 兵${c.soldiers}, 防御${c.defense}, 農業${c.agriculture}, 商業${c.commerce}`;
+      const c = state.castleCatalog.get(id)
+      if (!c) return null
+      return `  - ${c.name}(ID:${c.id}): 兵${c.soldiers}, 防御${c.defense}, 農業${c.agriculture}, 商業${c.commerce}`
     })
-    .join("\n");
+    .filter(Boolean)
+    .join('\n')
 
   const ownBusho = [...state.bushoCatalog.values()]
     .filter((b) => b.clanId === clanId)
     .map((b) => `  - ${b.name}(ID:${b.id}): 忠誠${b.emotions.loyalty}`)
-    .join("\n");
+    .join('\n')
 
   const otherClans = [...state.clanCatalog.values()]
     .filter((c) => c.id !== clanId)
     .map((c) => {
-      const l = state.bushoCatalog.get(c.leaderId);
+      const l = state.bushoCatalog.get(c.leaderId)
       const castles = c.castleIds
         .map((id) => {
-          const castle = state.castleCatalog.get(id)!;
-          return `${castle.name}(ID:${id}, 兵${castle.soldiers})`;
+          const castle = state.castleCatalog.get(id)
+          if (!castle) return null
+          return `${castle.name}(ID:${id}, 兵${castle.soldiers})`
         })
-        .join(", ");
+        .filter(Boolean)
+        .join(', ')
       const relation = state.diplomacyRelations.find(
         (r) =>
           (r.clan1Id === clanId && r.clan2Id === c.id) ||
-          (r.clan1Id === c.id && r.clan2Id === clanId)
-      );
-      return `  - ${c.name}(ID:${c.id}): 当主${l?.name}, 関係=${relation?.type || "neutral"}, 城=[${castles}]`;
+          (r.clan1Id === c.id && r.clan2Id === clanId),
+      )
+      return `  - ${c.name}(ID:${c.id}): 当主${l?.name}, 関係=${relation?.type || 'neutral'}, 城=[${castles}]`
     })
-    .join("\n");
+    .join('\n')
 
-  const adjacentEnemies: string[] = [];
+  const adjacentEnemies: string[] = []
   for (const castleId of clan.castleIds) {
-    const castle = state.castleCatalog.get(castleId)!;
+    const castle = state.castleCatalog.get(castleId)
+    if (!castle) continue
     for (const adjId of castle.adjacentCastleIds) {
-      const adj = state.castleCatalog.get(adjId)!;
+      const adj = state.castleCatalog.get(adjId)
+      if (!adj) continue
       if (adj.ownerId !== clanId) {
         adjacentEnemies.push(
-          `  ${castle.name}(${castleId}) → ${adj.name}(${adjId}): ${state.clanCatalog.get(adj.ownerId)?.name}, 兵${adj.soldiers}`
-        );
+          `  ${castle.name}(${castleId}) → ${adj.name}(${adjId}): ${state.clanCatalog.get(adj.ownerId)?.name}, 兵${adj.soldiers}`,
+        )
       }
     }
   }
 
   const enemyBusho = [...state.bushoCatalog.values()]
     .filter((b) => b.clanId && b.clanId !== clanId)
-    .map(
-      (b) =>
-        `  - ${b.name}(ID:${b.id}, ${state.clanCatalog.get(b.clanId!)?.name}): 忠誠${b.emotions.loyalty}`
-    )
-    .join("\n");
+    .map((b) => {
+      const clanName = b.clanId ? state.clanCatalog.get(b.clanId)?.name : '浪人'
+      return `  - ${b.name}(ID:${b.id}, ${clanName}): 忠誠${b.emotions.loyalty}`
+    })
+    .join('\n')
 
   return `
 # ターン${state.turn} - ${clan.name}（${leader.name}）
@@ -77,15 +89,15 @@ ${ownBusho}
 ${otherClans}
 
 ## 攻撃可能な敵城（隣接）
-${adjacentEnemies.length > 0 ? adjacentEnemies.join("\n") : "  なし"}
+${adjacentEnemies.length > 0 ? adjacentEnemies.join('\n') : '  なし'}
 
 ## 敵武将（謀略対象）
-${enemyBusho || "  なし"}
-`.trim();
+${enemyBusho || '  なし'}
+`.trim()
 }
 
 export function getPersonalityDescription(leader: Busho): string {
-  return `あなたは${leader.name}。性格: ${leader.personality.join(", ")}。この性格に基づいて行動せよ。`;
+  return `あなたは${leader.name}。性格: ${leader.personality.join(', ')}。この性格に基づいて行動せよ。`
 }
 
 export function buildAITurnSystemPrompt(leader: Busho): string {
@@ -98,7 +110,7 @@ ${getPersonalityDescription(leader)}
 重要:
 - 攻撃は隣接する城にのみ可能
 - 資金・兵糧の残量を確認すること
-- IDは正確に指定すること`;
+- IDは正確に指定すること`
 }
 
 export function buildPlayerCommandSystemPrompt(leaderName: string): string {
@@ -110,5 +122,5 @@ export function buildPlayerCommandSystemPrompt(leaderName: string): string {
 - IDは正確に指定すること
 - 不明な点があれば確認してから実行
 
-指示が曖昧な場合は、最も妥当な解釈で実行してください。`;
+指示が曖昧な場合は、最も妥当な解釈で実行してください。`
 }

@@ -11,7 +11,7 @@ npx ai-nobunaga
 または、グローバルインストールして `信長` コマンドで実行:
 
 ```bash
-npm install -g ai-nobunaga
+pnpm add -g ai-nobunaga
 信長
 ```
 
@@ -46,14 +46,14 @@ GEMINI_API_KEY=your_api_key npx ai-nobunaga
 
 ```bash
 # 依存パッケージのインストール
-npm install
+pnpm install
 
 # 環境変数の設定
 cp .env.example .env
 # .env を編集して GEMINI_API_KEY を設定
 
 # 起動
-npm run dev
+pnpm dev
 ```
 
 ## 遊び方
@@ -83,13 +83,13 @@ npm run dev
 
 ## 操作方法
 
-| キー | 動作 |
-|------|------|
-| ↑↓ | 選択移動 |
-| Enter | 決定 |
-| 1-9 | クイック選択 |
-| ESC / BS | 戻る |
-| Tab | 議論ログ表示（評定中） |
+| キー     | 動作                   |
+| -------- | ---------------------- |
+| ↑↓       | 選択移動               |
+| Enter    | 決定                   |
+| 1-9      | クイック選択           |
+| ESC / BS | 戻る                   |
+| Tab      | 議論ログ表示（評定中） |
 
 ## 技術スタック
 
@@ -101,13 +101,13 @@ npm run dev
 
 ```bash
 # 開発モード（ホットリロード）
-npm run dev
+pnpm dev
 
 # ビルド
-npm run build
+pnpm build
 
 # プロダクション実行
-npm start
+pnpm start
 ```
 
 ## ライセンス

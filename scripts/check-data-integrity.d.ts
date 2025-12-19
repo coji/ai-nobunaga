@@ -1,3 +1,3 @@
 #!/usr/bin/env npx tsx
-export {};
+export {}
 //# sourceMappingURL=check-data-integrity.d.ts.map

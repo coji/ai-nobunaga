@@ -1,3 +1,3 @@
 // メニューコンポーネントのre-export
 
-export { MainMenu } from "./MainMenu.js";
+export { MainMenu } from './MainMenu.js'

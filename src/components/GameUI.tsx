@@ -1,38 +1,44 @@
 // メインゲームUIコンポーネント
 
-import { useState } from "react";
-import { Box, Text, useInput, useApp } from "ink";
-import Spinner from "ink-spinner";
-import type { GameState } from "../types.js";
+import { Box, Text, useApp, useInput } from 'ink'
+import Spinner from 'ink-spinner'
+import { useState } from 'react'
+import type { GameState } from '../types.js'
 
 // フック
-import { useGameNavigation, useGameActions } from "./hooks/index.js";
+import { useGameActions, useGameNavigation } from './hooks/index.js'
 
 // 画面定義
 import {
   screenDefinitions,
-  type ScreenContext,
   type RenderProps,
-} from "./screenDefinitions.js";
+  type ScreenContext,
+} from './screenDefinitions.js'
 
 interface Props {
-  initialState: GameState;
+  initialState: GameState
 }
 
 export function GameUI({ initialState }: Props) {
-  const { exit } = useApp();
-  const [state, setState] = useState<GameState>(initialState);
+  const { exit } = useApp()
+  const [state, setState] = useState<GameState>(initialState)
 
-  const nav = useGameNavigation();
+  const nav = useGameNavigation()
   const actions = useGameActions({
     state,
     setState,
     resetToMain: nav.resetToMain,
     setScreen: nav.setScreen,
-  });
+  })
 
-  const playerClan = state.clanCatalog.get(state.playerClanId)!;
-  const playerLeader = state.bushoCatalog.get(playerClan.leaderId)!;
+  const playerClan = state.clanCatalog.get(state.playerClanId)
+  if (!playerClan) {
+    throw new Error(`Clan not found: ${state.playerClanId}`)
+  }
+  const playerLeader = state.bushoCatalog.get(playerClan.leaderId)
+  if (!playerLeader) {
+    throw new Error(`Leader not found: ${playerClan.leaderId}`)
+  }
 
   // 画面操作コンテキスト
   const screenContext: ScreenContext = {
@@ -44,7 +50,7 @@ export function GameUI({ initialState }: Props) {
     state,
     processEndTurn: actions.processEndTurn,
     handleCouncilProposal: actions.handleCouncilProposal,
-  };
+  }
 
   // 画面表示用プロパティ
   const renderProps: RenderProps = {
@@ -56,59 +62,59 @@ export function GameUI({ initialState }: Props) {
     parentIndex: nav.getParentIndex(),
     aiResults: actions.aiResults,
     onCouncilProposal: actions.handleCouncilProposal,
-  };
+  }
 
   // 現在の画面定義
-  const currentScreen = screenDefinitions[nav.screen];
+  const currentScreen = screenDefinitions[nav.screen]
 
   useInput((input, key) => {
-    if (actions.isProcessing) return;
+    if (actions.isProcessing) return
 
     // ゲーム終了画面
-    if (nav.screen === "game_over") {
-      if (key.escape) exit();
-      return;
+    if (nav.screen === 'game_over') {
+      if (key.escape) exit()
+      return
     }
 
     // 終了確認画面
-    if (nav.screen === "confirm_exit") {
-      if (input === "y" || input === "Y") {
-        exit();
-      } else if (input === "n" || input === "N" || key.escape) {
-        nav.popScreen();
+    if (nav.screen === 'confirm_exit') {
+      if (input === 'y' || input === 'Y') {
+        exit()
+      } else if (input === 'n' || input === 'N' || key.escape) {
+        nav.popScreen()
       }
-      return;
+      return
     }
 
     // テキスト入力がある画面ではBackspaceを戻るに使わない
-    const hasTextInput = nav.screen === "council";
+    const hasTextInput = nav.screen === 'council'
 
     // ESCで戻る（テキスト入力画面以外ではBackspaceでも戻る）
     if (key.escape || (!hasTextInput && (key.backspace || key.delete))) {
-      if (nav.screen === "main") {
-        if (key.escape) nav.pushScreen("confirm_exit");
+      if (nav.screen === 'main') {
+        if (key.escape) nav.pushScreen('confirm_exit')
       } else {
-        nav.popScreen();
+        nav.popScreen()
       }
-      return;
+      return
     }
 
     // 上下キー
-    if (key.upArrow) nav.setSelectedIndex((i) => Math.max(0, i - 1));
-    if (key.downArrow) nav.setSelectedIndex((i) => i + 1);
+    if (key.upArrow) nav.setSelectedIndex((i) => Math.max(0, i - 1))
+    if (key.downArrow) nav.setSelectedIndex((i) => i + 1)
 
     // 選択
     if (key.return) {
-      currentScreen.onSelect?.(screenContext);
+      currentScreen.onSelect?.(screenContext)
     }
 
     // 数字キー
-    const num = parseInt(input);
-    if (!isNaN(num) && num >= 1 && num <= 9) {
-      nav.setSelectedIndex(num - 1);
-      setTimeout(() => currentScreen.onSelect?.(screenContext), 50);
+    const num = parseInt(input, 10)
+    if (!Number.isNaN(num) && num >= 1 && num <= 9) {
+      nav.setSelectedIndex(num - 1)
+      setTimeout(() => currentScreen.onSelect?.(screenContext), 50)
     }
-  });
+  })
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -125,15 +131,15 @@ export function GameUI({ initialState }: Props) {
       {/* ステータスバー */}
       <Box marginY={1}>
         <Text>
-          金: <Text color="yellow">{playerClan.gold}</Text> | 兵糧:{" "}
-          <Text color="green">{playerClan.food}</Text> | 兵:{" "}
+          金: <Text color="yellow">{playerClan.gold}</Text> | 兵糧:{' '}
+          <Text color="green">{playerClan.food}</Text> | 兵:{' '}
           <Text color="red">
             {playerClan.castleIds.reduce(
               (sum, id) => sum + (state.castleCatalog.get(id)?.soldiers || 0),
-              0
+              0,
             )}
-          </Text>{" "}
-          | 城: <Text color="cyan">{playerClan.castleIds.length}</Text> | 行動:{" "}
+          </Text>{' '}
+          | 城: <Text color="cyan">{playerClan.castleIds.length}</Text> | 行動:{' '}
           <Text color="magenta">
             {actions.actionsRemaining}/{actions.maxActions}
           </Text>
@@ -148,7 +154,7 @@ export function GameUI({ initialState }: Props) {
         <Box marginTop={1} borderStyle="single" paddingX={1}>
           {actions.isProcessing && (
             <Text color="green">
-              <Spinner type="dots" />{" "}
+              <Spinner type="dots" />{' '}
             </Text>
           )}
           <Text>{actions.message}</Text>
@@ -162,5 +168,5 @@ export function GameUI({ initialState }: Props) {
         </Text>
       </Box>
     </Box>
-  );
+  )
 }

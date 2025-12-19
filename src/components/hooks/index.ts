@@ -1,4 +1,4 @@
 // フックのre-export
 
-export { useGameNavigation } from "./useGameNavigation.js";
-export { useGameActions } from "./useGameActions.js";
+export { useGameActions } from './useGameActions.js'
+export { useGameNavigation } from './useGameNavigation.js'

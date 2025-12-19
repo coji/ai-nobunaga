@@ -1,93 +1,93 @@
 // 地図表示画面コンポーネント
 
-import { Box, Text } from "ink";
-import type { GameState } from "../../types.js";
+import { Box, Text } from 'ink'
+import type { GameState } from '../../types.js'
 
 interface Props {
-  state: GameState;
-  playerClanId: string;
+  state: GameState
+  playerClanId: string
 }
 
 // 勢力ごとの色を定義
 const CLAN_COLORS: Record<string, string> = {
-  oda: "yellow",
-  imagawa: "cyan",
-  saito: "magenta",
-  takeda: "red",
-  uesugi: "blue",
-  hojo: "green",
-  mori: "white",
-  chosokabe: "yellowBright",
-  shimazu: "redBright",
-  otomo: "cyanBright",
-  ryuzoji: "greenBright",
-  azai: "blueBright",
-  asakura: "magentaBright",
-  honganji: "whiteBright",
-  miyoshi: "gray",
-};
+  oda: 'yellow',
+  imagawa: 'cyan',
+  saito: 'magenta',
+  takeda: 'red',
+  uesugi: 'blue',
+  hojo: 'green',
+  mori: 'white',
+  chosokabe: 'yellowBright',
+  shimazu: 'redBright',
+  otomo: 'cyanBright',
+  ryuzoji: 'greenBright',
+  azai: 'blueBright',
+  asakura: 'magentaBright',
+  honganji: 'whiteBright',
+  miyoshi: 'gray',
+}
 
 // 城の略称マッピング
 const CASTLE_ABBREV: Record<string, string> = {
   // 東北
-  sannohe: "三戸",
-  yonezawa: "米沢",
-  yamagata: "山形",
-  kurokawa: "黒川",
+  sannohe: '三戸',
+  yonezawa: '米沢',
+  yamagata: '山形',
+  kurokawa: '黒川',
   // 関東
-  utsunomiya: "宇都",
-  minowa: "箕輪",
-  kawagoe: "河越",
-  edo: "江戸",
-  odawara: "小田",
+  utsunomiya: '宇都',
+  minowa: '箕輪',
+  kawagoe: '河越',
+  edo: '江戸',
+  odawara: '小田',
   // 甲信越
-  kasugayama: "春日",
-  toyama: "富山",
-  matsumoto: "深志",
-  kaizu: "海津",
-  kofu: "躑躅",
+  kasugayama: '春日',
+  toyama: '富山',
+  matsumoto: '深志',
+  kaizu: '海津',
+  kofu: '躑躅',
   // 東海
-  sunpu: "駿府",
-  hamamatsu: "浜松",
-  yoshida_mikawa: "吉田",
-  okazaki: "岡崎",
-  nagoya: "那古",
-  kiyosu: "清洲",
-  inabayama: "稲葉",
-  ogaki: "大垣",
-  ise: "長島",
+  sunpu: '駿府',
+  hamamatsu: '浜松',
+  yoshida_mikawa: '吉田',
+  okazaki: '岡崎',
+  nagoya: '那古',
+  kiyosu: '清洲',
+  inabayama: '稲葉',
+  ogaki: '大垣',
+  ise: '長島',
   // 北陸
-  kanazawa: "尾山",
-  ichijodani: "一乗",
+  kanazawa: '尾山',
+  ichijodani: '一乗',
   // 近畿
-  odani: "小谷",
-  kannonji: "観音",
-  nijo: "御所",
-  ishiyama: "石山",
-  sakai: "堺　",
-  saika: "雑賀",
-  himeji: "姫路",
+  odani: '小谷',
+  kannonji: '観音',
+  nijo: '御所',
+  ishiyama: '石山',
+  sakai: '堺　',
+  saika: '雑賀',
+  himeji: '姫路',
   // 中国
-  okayama: "天神",
-  tottori: "鳥取",
-  gassan_toda: "月山",
-  hiroshima: "郡山",
+  okayama: '天神',
+  tottori: '鳥取',
+  gassan_toda: '月山',
+  hiroshima: '郡山',
   // 四国
-  sogawa: "十河",
-  tokushima: "徳島",
-  matsuyama: "湯築",
-  uwajima: "黒瀬",
-  kochi: "岡豊",
+  sogawa: '十河',
+  tokushima: '徳島',
+  matsuyama: '湯築',
+  uwajima: '黒瀬',
+  kochi: '岡豊',
   // 九州
-  kokura: "小倉",
-  funai: "府内",
-  usuki: "臼杵",
-  saga: "佐嘉",
-  hirado: "平戸",
-  hitoyoshi: "人吉",
-  kagoshima: "内城",
-  obi: "飫肥",
-};
+  kokura: '小倉',
+  funai: '府内',
+  usuki: '臼杵',
+  saga: '佐嘉',
+  hirado: '平戸',
+  hitoyoshi: '人吉',
+  kagoshima: '内城',
+  obi: '飫肥',
+}
 
 // 城を地図上の位置に配置
 // 位置: [row, col] (0-indexed)
@@ -150,58 +150,57 @@ const CASTLE_POSITIONS: Record<string, [number, number]> = {
   hitoyoshi: [18, 0],
   kagoshima: [19, -2],
   obi: [18, 4],
-};
+}
 
 export function MapScreen({ state, playerClanId }: Props) {
   // 地図の行数と列数
-  const MAP_HEIGHT = 21;
-  const MAP_WIDTH = 44;
+  const MAP_HEIGHT = 21
+  const MAP_WIDTH = 44
 
   // 空の地図を作成
   const map: { char: string; color: string }[][] = Array.from(
     { length: MAP_HEIGHT },
     () =>
       Array.from({ length: MAP_WIDTH }, () => ({
-        char: "　",
-        color: "gray",
-      }))
-  );
+        char: '　',
+        color: 'gray',
+      })),
+  )
 
   // 城を地図に配置
   for (const castle of state.castleCatalog.values()) {
-    const pos = CASTLE_POSITIONS[castle.id];
-    if (!pos) continue;
+    const pos = CASTLE_POSITIONS[castle.id]
+    if (!pos) continue
 
-    const [row, col] = pos;
+    const [row, col] = pos
     // 列を調整（負の値や範囲外を処理）
-    const adjustedCol = Math.max(0, Math.min(MAP_WIDTH - 2, col));
-    if (row < 0 || row >= MAP_HEIGHT) continue;
+    const adjustedCol = Math.max(0, Math.min(MAP_WIDTH - 2, col))
+    if (row < 0 || row >= MAP_HEIGHT) continue
 
-    const abbrev = CASTLE_ABBREV[castle.id] || castle.name.slice(0, 2);
+    const abbrev = CASTLE_ABBREV[castle.id] || castle.name.slice(0, 2)
     const color =
       castle.ownerId === playerClanId
-        ? "cyan"
-        : (CLAN_COLORS[castle.ownerId] ?? "white");
+        ? 'cyan'
+        : (CLAN_COLORS[castle.ownerId] ?? 'white')
 
     // 2文字分の城名を配置
-    if (adjustedCol < MAP_WIDTH) {
-      map[row]![adjustedCol] = { char: abbrev[0] || "　", color };
+    const mapRow = map[row]
+    if (mapRow && adjustedCol < MAP_WIDTH) {
+      mapRow[adjustedCol] = { char: abbrev[0] || '　', color }
     }
-    if (adjustedCol + 1 < MAP_WIDTH) {
-      map[row]![adjustedCol + 1] = { char: abbrev[1] || "　", color };
+    if (mapRow && adjustedCol + 1 < MAP_WIDTH) {
+      mapRow[adjustedCol + 1] = { char: abbrev[1] || '　', color }
     }
   }
 
   // 勢力の凡例を作成
-  const clans = [...state.clanCatalog.values()];
+  const clans = [...state.clanCatalog.values()]
   const legend = clans.map((clan) => ({
     name: clan.name,
     color:
-      clan.id === playerClanId
-        ? "cyan"
-        : (CLAN_COLORS[clan.id] ?? "white"),
+      clan.id === playerClanId ? 'cyan' : (CLAN_COLORS[clan.id] ?? 'white'),
     castleCount: clan.castleIds.length,
-  }));
+  }))
 
   return (
     <Box flexDirection="column">
@@ -235,10 +234,8 @@ export function MapScreen({ state, playerClanId }: Props) {
         </Box>
       </Box>
       <Box marginTop={1}>
-        <Text dimColor>
-          ※ 城名の色が勢力を表します。自勢力は水色で表示。
-        </Text>
+        <Text dimColor>※ 城名の色が勢力を表します。自勢力は水色で表示。</Text>
       </Box>
     </Box>
-  );
+  )
 }
