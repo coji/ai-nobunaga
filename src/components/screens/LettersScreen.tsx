@@ -1,14 +1,18 @@
 // 書状画面コンポーネント
 
 import { Box, Text } from 'ink'
-import type { GameState, Letter } from '../../types.js'
+import { useGameState } from '../../store/gameStore.js'
+import type { Letter } from '../../types.js'
 
 interface Props {
-  state: GameState
   currentLetter: Letter | null
 }
 
-export function LettersScreen({ state, currentLetter }: Props) {
+export function LettersScreen({ currentLetter }: Props) {
+  const state = useGameState()
+
+  if (!state) return null
+
   const letters = state.letters.slice(-5)
 
   return (

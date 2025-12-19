@@ -1,16 +1,19 @@
 // 勢力情報画面コンポーネント（折りたたみ式）
 
 import { Box, Text } from 'ink'
-import type { GameState } from '../../types.js'
+import { useGameState, usePlayerClanId } from '../../store/gameStore.js'
 import { getDiplomacyLabel, getLoyaltyColor } from '../utils.js'
 
 interface Props {
-  state: GameState
-  playerClanId: string
   selectedIndex: number
 }
 
-export function StatusScreen({ state, playerClanId, selectedIndex }: Props) {
+export function StatusScreen({ selectedIndex }: Props) {
+  const state = useGameState()
+  const playerClanId = usePlayerClanId()
+
+  if (!state) return null
+
   const clans = [...state.clanCatalog.values()]
 
   return (

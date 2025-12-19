@@ -1,73 +1,78 @@
-// ゲームアクション用カスタムフック
+// ゲームアクション用カスタムフック（zustand store 使用版）
 
-import { useState } from 'react'
-import { executeAITurn, type AITurnResult } from '../../ai/index.js'
+import { useCallback, useRef } from 'react'
+import { executeAITurn } from '../../ai/index.js'
 import { checkVictory, processTurnEnd } from '../../engine.js'
-import type { GameState } from '../../types.js'
+import { useGameStore } from '../../store/gameStore.js'
 import type { Screen } from '../types.js'
 import type { ScreenData } from './useGameNavigation.js'
 
 interface UseGameActionsProps {
-  state: GameState
-  setState: (state: GameState) => void
   resetToMain: () => void
   setScreen: (screen: Screen, data?: ScreenData) => void
 }
 
 export function useGameActions({
-  state,
-  setState,
   resetToMain,
   setScreen,
 }: UseGameActionsProps) {
-  const MAX_ACTIONS = 3
-  const [message, setMessage] = useState('')
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [actionsRemaining, setActionsRemaining] = useState(MAX_ACTIONS)
-  const [aiResults, setAiResults] = useState<
-    { clanName: string; result: AITurnResult }[]
-  >([])
+  const {
+    message,
+    isProcessing,
+    actionsRemaining,
+    aiResults,
+    maxActions,
+    setMessage,
+    setIsProcessing,
+    setActionsRemaining,
+    resetActions,
+    addAiResult,
+    clearAiResults,
+    updateGameState,
+    getState,
+  } = useGameStore()
 
-  const playerClan = state.clanCatalog.get(state.playerClanId)
-  if (!playerClan) {
-    throw new Error(`Clan not found: ${state.playerClanId}`)
-  }
+  // processEndTurn への参照を保持（循環依存を解消）
+  const processEndTurnRef = useRef<() => Promise<void>>(undefined)
 
-  const consumeAction = () => {
+  const consumeAction = useCallback(() => {
     const remaining = actionsRemaining - 1
     setActionsRemaining(remaining)
-    if (remaining <= 0) {
-      setTimeout(() => processEndTurn(), 100)
-    }
-  }
+    return remaining
+  }, [actionsRemaining, setActionsRemaining])
 
-  const handleCouncilProposal = (result: {
-    tool: string
-    narrative: string
-    success: boolean
-  }) => {
-    if (actionsRemaining <= 0) {
-      setMessage('行動ポイントがありません')
-      return
-    }
+  const handleCouncilProposal = useCallback(
+    (result: { tool: string; narrative: string; success: boolean }) => {
+      if (actionsRemaining <= 0) {
+        setMessage('行動ポイントがありません')
+        return
+      }
 
-    setMessage(result.narrative)
-    // Map を新しいインスタンスにコピーして React に変更を検知させる
-    setState({
-      ...state,
-      bushoCatalog: new Map(state.bushoCatalog),
-      castleCatalog: new Map(state.castleCatalog),
-      clanCatalog: new Map(state.clanCatalog),
-    })
+      setMessage(result.narrative)
 
-    // 行動ポイントを消費
-    consumeAction()
-  }
+      // immer により変更は自動で検知されるため、
+      // Map の新規作成は不要になった
+      // updateGameState を呼ぶ必要もない（engine 側で既に変更済み）
 
-  const processEndTurn = async () => {
+      // 行動ポイントを消費
+      const remaining = consumeAction()
+      if (remaining <= 0) {
+        setTimeout(() => processEndTurnRef.current?.(), 100)
+      }
+    },
+    [actionsRemaining, setMessage, consumeAction],
+  )
+
+  const processEndTurn = useCallback(async () => {
     setIsProcessing(true)
     setScreen('ai_turn')
-    setAiResults([])
+    clearAiResults()
+
+    const state = getState()
+    const playerClan = state.clanCatalog.get(state.playerClanId)
+    if (!playerClan) {
+      throw new Error(`Clan not found: ${state.playerClanId}`)
+    }
 
     try {
       for (const clan of state.clanCatalog.values()) {
@@ -75,15 +80,19 @@ export function useGameActions({
 
         setMessage(`${clan.name}が思考中...`)
         const result = await executeAITurn(state, clan.id)
-        setAiResults((r) => [...r, { clanName: clan.name, result }])
+        addAiResult(clan.name, result)
       }
 
-      processTurnEnd(state)
-      setMessage(`ターン${state.turn}開始`)
-      setState({ ...state })
-      setActionsRemaining(MAX_ACTIONS)
+      // ターン終了処理（immer の draft を通じて実行）
+      updateGameState((draft) => {
+        processTurnEnd(draft)
+      })
 
-      const victory = checkVictory(state)
+      const currentState = getState()
+      setMessage(`ターン${currentState.turn}開始`)
+      resetActions()
+
+      const victory = checkVictory(currentState)
       if (victory.gameOver) {
         setIsProcessing(false)
         setScreen('game_over', {
@@ -98,14 +107,27 @@ export function useGameActions({
       setIsProcessing(false)
       resetToMain()
     }
-  }
+  }, [
+    setIsProcessing,
+    setScreen,
+    clearAiResults,
+    getState,
+    setMessage,
+    addAiResult,
+    updateGameState,
+    resetActions,
+    resetToMain,
+  ])
+
+  // ref を最新の processEndTurn に更新
+  processEndTurnRef.current = processEndTurn
 
   return {
     message,
     isProcessing,
     actionsRemaining,
     aiResults,
-    maxActions: MAX_ACTIONS,
+    maxActions,
     handleCouncilProposal,
     processEndTurn,
   }

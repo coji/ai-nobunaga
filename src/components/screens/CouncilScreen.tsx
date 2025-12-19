@@ -5,7 +5,6 @@ import Spinner from 'ink-spinner'
 import TextInput from 'ink-text-input'
 import { useState } from 'react'
 import { ai, MODEL_LITE } from '../../ai/client.js'
-import { executeToolCall } from '../../ai/executor.js'
 import {
   conductCouncilRound,
   generateNarrative,
@@ -15,6 +14,7 @@ import {
   type CouncilStatement,
   type RetainerComment,
 } from '../../ai/index.js'
+import { useGameStore } from '../../store/gameStore.js'
 import type { GameState, ResultGrade } from '../../types.js'
 
 interface Props {
@@ -80,6 +80,9 @@ export function CouncilScreen({
   playerClanId,
   onExecuteProposal,
 }: Props) {
+  // Store から executeToolCall を取得
+  const executeToolCall = useGameStore((s) => s.executeToolCall)
+
   const [input, setInput] = useState('')
   const [topic, setTopic] = useState<string | null>(null)
   const [statements, setStatements] = useState<CouncilStatement[]>([])
@@ -318,7 +321,6 @@ ${enemyInfo.join('\n')}
     setPhase('executing')
 
     const { result, narrative } = executeToolCall(
-      state,
       playerClanId,
       proposal.tool,
       proposal.args,

@@ -1,11 +1,7 @@
 // AI行動画面コンポーネント
 
 import { Box, Text } from 'ink'
-import type { AITurnResult } from '../../ai/index.js'
-
-interface Props {
-  aiResults: { clanName: string; result: AITurnResult }[]
-}
+import { useAiResults } from '../../store/gameStore.js'
 
 // ツール名を日本語に変換
 function getToolDisplayName(tool: string): string {
@@ -33,7 +29,9 @@ function formatNarrative(narrative: string): string {
   return text
 }
 
-export function AITurnScreen({ aiResults }: Props) {
+export function AITurnScreen() {
+  const aiResults = useAiResults()
+
   return (
     <Box flexDirection="column">
       <Text bold underline>

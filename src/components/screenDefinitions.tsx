@@ -2,7 +2,6 @@
 
 import { Box, Text } from 'ink'
 import type { ReactNode } from 'react'
-import type { AITurnResult } from '../ai/index.js'
 import type { GameState } from '../types.js'
 import type { ScreenData } from './hooks/useGameNavigation.js'
 import type { Screen } from './types.js'
@@ -39,15 +38,12 @@ export interface ScreenContext {
   }) => void
 }
 
-// 画面表示用プロパティ
+// 画面表示用プロパティ（簡素化：多くのコンポーネントは Store から直接取得）
 export interface RenderProps {
   state: GameState
   playerClanId: string
   selectedIndex: number
   screenData: ScreenData
-  parentData: ScreenData
-  parentIndex: number
-  aiResults: { clanName: string; result: AITurnResult }[]
   onCouncilProposal: (result: {
     tool: string
     narrative: string
@@ -90,19 +86,11 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
   },
 
   status_list: {
-    render: ({ state, playerClanId, selectedIndex }) => (
-      <StatusScreen
-        state={state}
-        playerClanId={playerClanId}
-        selectedIndex={selectedIndex}
-      />
-    ),
+    render: ({ selectedIndex }) => <StatusScreen selectedIndex={selectedIndex} />,
   },
 
   status_map: {
-    render: ({ state, playerClanId }) => (
-      <MapScreen state={state} playerClanId={playerClanId} />
-    ),
+    render: () => <MapScreen />,
   },
 
   council: {
@@ -116,13 +104,13 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
   },
 
   letters: {
-    render: ({ state, screenData }) => (
-      <LettersScreen state={state} currentLetter={screenData.letter || null} />
+    render: ({ screenData }) => (
+      <LettersScreen currentLetter={screenData.letter || null} />
     ),
   },
 
   ai_turn: {
-    render: ({ aiResults }) => <AITurnScreen aiResults={aiResults} />,
+    render: () => <AITurnScreen />,
   },
 
   confirm_exit: {

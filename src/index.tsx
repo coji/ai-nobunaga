@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import 'dotenv/config'
+import { enableMapSet } from 'immer'
 import { render } from 'ink'
+
+// immer で Map/Set を扱えるようにする（アプリケーション起動時に一度だけ呼び出す）
+enableMapSet()
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'

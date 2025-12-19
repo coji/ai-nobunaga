@@ -1,12 +1,7 @@
 // 地図表示画面コンポーネント
 
 import { Box, Text } from 'ink'
-import type { GameState } from '../../types.js'
-
-interface Props {
-  state: GameState
-  playerClanId: string
-}
+import { useGameState, usePlayerClanId } from '../../store/gameStore.js'
 
 // 勢力ごとの色を定義
 const CLAN_COLORS: Record<string, string> = {
@@ -152,7 +147,12 @@ const CASTLE_POSITIONS: Record<string, [number, number]> = {
   obi: [18, 4],
 }
 
-export function MapScreen({ state, playerClanId }: Props) {
+export function MapScreen() {
+  const state = useGameState()
+  const playerClanId = usePlayerClanId()
+
+  if (!state) return null
+
   // 地図の行数と列数
   const MAP_HEIGHT = 21
   const MAP_WIDTH = 44
