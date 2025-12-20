@@ -2,6 +2,7 @@
 
 import { createCommand } from '../commands/index.js'
 import { ACTION_DEFAULTS, AI_THRESHOLDS } from '../constants/index.js'
+import { playLogger } from '../services/playlog.js'
 import type { GameState, PersonalityTag } from '../types.js'
 import { ai, MODEL, MODEL_LITE } from './client.js'
 import {
@@ -384,6 +385,16 @@ export async function executePlayerCommand(
   }
 
   const cmdResult = cmd.execute(state, clanId)
+
+  // プレイログに記録
+  playLogger.logAction(
+    cmdResult.newState,
+    clanId,
+    'ai',
+    toolName,
+    args,
+    cmdResult.result,
+  )
 
   // 結果に対するAIのコメントを生成
   const commentResponse = await ai.models.generateContent({

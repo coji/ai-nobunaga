@@ -1,6 +1,7 @@
 // ターン終了コマンド
 
 import { processTurnEnd } from '../engine/turn.js'
+import { playLogger } from '../services/playlog.js'
 import type { Castle, GameState } from '../types.js'
 import type { CommandResult, GameCommand } from './types.js'
 
@@ -11,6 +12,11 @@ export class EndTurnCommand implements GameCommand {
   execute(state: GameState, _clanId: string): CommandResult {
     const newState = structuredClone(state)
     const changes = processTurnEnd(newState)
+
+    // ターン終了時にサマリーを記録
+    playLogger.logTurnEnd(newState)
+    // 自動保存
+    playLogger.saveIntermediate()
 
     return {
       newState,

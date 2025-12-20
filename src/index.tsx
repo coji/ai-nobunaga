@@ -8,6 +8,7 @@ import readline from 'node:readline'
 import { enableUsageTracking } from './ai/usage.js'
 import { GameUI } from './components/GameUI.js'
 import { createInitialGameState } from './data/scenario.js'
+import { playLogger } from './services/playlog.js'
 
 const CONFIG_PATH = path.join(os.homedir(), '.nobunaga')
 
@@ -114,6 +115,9 @@ async function main() {
 
   // プレイヤーは織田家でスタート
   const initialState = createInitialGameState('oda')
+
+  // プレイログセッション開始
+  playLogger.startSession('oda')
 
   console.clear()
   console.log('npx 信長 を起動中...\n')

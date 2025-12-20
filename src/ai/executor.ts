@@ -2,6 +2,7 @@
 
 import { normalizeToolName } from '../commands/aliases.js'
 import { createCommand } from '../commands/index.js'
+import { playLogger } from '../services/playlog.js'
 import type { ActionResult, GameState } from '../types.js'
 
 interface ExecuteResult {
@@ -40,6 +41,16 @@ export function executeToolCall(
 
   // コマンドを実行
   const cmdResult = command.execute(state, clanId)
+
+  // プレイログに記録
+  playLogger.logAction(
+    cmdResult.newState,
+    clanId,
+    'player',
+    normalizedToolName,
+    args,
+    cmdResult.result,
+  )
 
   return {
     result: cmdResult.result,
