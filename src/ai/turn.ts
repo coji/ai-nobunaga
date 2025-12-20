@@ -306,7 +306,7 @@ export async function executePlayerCommand(
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
 
-  const systemPrompt = buildPlayerCommandSystemPrompt(leader.name)
+  const systemPrompt = buildPlayerCommandSystemPrompt(leader.name, clan.gold)
 
   const userPrompt = `${buildGameContextPrompt(state, clanId)}
 

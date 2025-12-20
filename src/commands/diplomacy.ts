@@ -1,5 +1,6 @@
 // 外交コマンド
 
+import { DIPLOMACY } from '../constants/index.js'
 import type { DiplomacyAction, GameState } from '../types.js'
 import { BaseCommand } from './base.js'
 import {
@@ -63,9 +64,15 @@ export class ProposeAllianceCommand extends BaseCommand {
     const { grade, multiplier, narrative: gradePrefix } = this.rollGrade()
 
     // 同盟成功率（グレードと相手の外交状況で変動）
-    const baseSuccessRate = 0.5
+    const baseSuccessRate = DIPLOMACY.ALLIANCE_BASE_SUCCESS_RATE
     const gradeBonus = multiplier - 1.0 // -0.5 〜 +0.5
-    const successRate = Math.min(0.95, Math.max(0.05, baseSuccessRate + gradeBonus * 0.3))
+    const successRate = Math.min(
+      DIPLOMACY.ALLIANCE_SUCCESS_RATE_MAX,
+      Math.max(
+        DIPLOMACY.ALLIANCE_SUCCESS_RATE_MIN,
+        baseSuccessRate + gradeBonus * 0.3,
+      ),
+    )
 
     const stateChanges: string[] = []
 
@@ -75,17 +82,31 @@ export class ProposeAllianceCommand extends BaseCommand {
         clan1Id: clanId,
         clan2Id: this.targetClanId,
         type: 'alliance',
-        expirationTurn: state.turn + 10, // 10ターン継続
+        expirationTurn: state.turn + DIPLOMACY.ALLIANCE_DURATION,
       })
 
       stateChanges.push(`${clan.name}と${targetClan.name}が同盟を締結`)
 
-      const narrative = `${gradePrefix}${targetClan.name}との同盟交渉に成功！10ターンの同盟が成立。`
-      return createSuccessResult(ctx.newState, action, grade, narrative, stateChanges, narrative)
+      const narrative = `${gradePrefix}${targetClan.name}との同盟交渉に成功！${DIPLOMACY.ALLIANCE_DURATION}ターンの同盟が成立。`
+      return createSuccessResult(
+        ctx.newState,
+        action,
+        grade,
+        narrative,
+        stateChanges,
+        narrative,
+      )
     } else {
       // 同盟失敗
       const narrative = `${targetClan.name}との同盟交渉は失敗に終わった。`
-      return createSuccessResult(ctx.newState, action, 'failure', narrative, [], narrative)
+      return createSuccessResult(
+        ctx.newState,
+        action,
+        'failure',
+        narrative,
+        [],
+        narrative,
+      )
     }
   }
 }
@@ -149,7 +170,7 @@ export class SendGiftCommand extends BaseCommand {
         ((r.clan1Id === clanId && r.clan2Id === this.targetClanId) ||
           (r.clan1Id === this.targetClanId && r.clan2Id === clanId)),
     )
-    if (hostileRelation && actualGift >= 500) {
+    if (hostileRelation && actualGift >= DIPLOMACY.GIFT_HOSTILE_RESET_AMOUNT) {
       hostileRelation.type = 'neutral'
     }
 
@@ -159,7 +180,14 @@ export class SendGiftCommand extends BaseCommand {
     ]
 
     const narrative = `${gradePrefix}${targetClan.name}に${actualGift}金を贈り、友好を深めた。`
-    return createSuccessResult(ctx.newState, action, grade, narrative, stateChanges, narrative)
+    return createSuccessResult(
+      ctx.newState,
+      action,
+      grade,
+      narrative,
+      stateChanges,
+      narrative,
+    )
   }
 }
 
@@ -218,7 +246,7 @@ export class ThreatenCommand extends BaseCommand {
     const stateChanges: string[] = []
 
     // 威嚇成功条件: 兵力比が1.5以上、またはクリティカル
-    if (powerRatio * multiplier >= 1.5) {
+    if (powerRatio * multiplier >= DIPLOMACY.THREATEN_POWER_RATIO_THRESHOLD) {
       // 威嚇成功 - 停戦関係を結ぶ
       const existingRelation = ctx.newState.diplomacyRelations.find(
         (r) =>
@@ -227,20 +255,27 @@ export class ThreatenCommand extends BaseCommand {
       )
       if (existingRelation) {
         existingRelation.type = 'truce'
-        existingRelation.expirationTurn = state.turn + 5
+        existingRelation.expirationTurn = state.turn + DIPLOMACY.TRUCE_DURATION
       } else {
         ctx.newState.diplomacyRelations.push({
           clan1Id: clanId,
           clan2Id: this.targetClanId,
           type: 'truce',
-          expirationTurn: state.turn + 5,
+          expirationTurn: state.turn + DIPLOMACY.TRUCE_DURATION,
         })
       }
 
       stateChanges.push(`${targetClan.name}が威嚇に屈した`)
 
-      const narrative = `${gradePrefix}${targetClan.name}を威嚇し、5ターンの停戦を勝ち取った。`
-      return createSuccessResult(ctx.newState, action, grade, narrative, stateChanges, narrative)
+      const narrative = `${gradePrefix}${targetClan.name}を威嚇し、${DIPLOMACY.TRUCE_DURATION}ターンの停戦を勝ち取った。`
+      return createSuccessResult(
+        ctx.newState,
+        action,
+        grade,
+        narrative,
+        stateChanges,
+        narrative,
+      )
     } else {
       // 威嚇失敗 - 敵対関係に
       const existingRelation = ctx.newState.diplomacyRelations.find(
@@ -263,7 +298,14 @@ export class ThreatenCommand extends BaseCommand {
       stateChanges.push(`${targetClan.name}との関係が悪化`)
 
       const narrative = `${targetClan.name}への威嚇は失敗し、敵対関係となった。`
-      return createSuccessResult(ctx.newState, action, 'failure', narrative, stateChanges, narrative)
+      return createSuccessResult(
+        ctx.newState,
+        action,
+        'failure',
+        narrative,
+        stateChanges,
+        narrative,
+      )
     }
   }
 }

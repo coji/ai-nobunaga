@@ -161,7 +161,14 @@ ${getPersonalityDescription(leader)}
 - IDは正確に指定すること`
 }
 
-export function buildPlayerCommandSystemPrompt(leaderName: string): string {
+export function buildPlayerCommandSystemPrompt(
+  leaderName: string,
+  gold: number,
+): string {
+  // AI大名と同じ計算式
+  const recommendedRecruitCount = Math.min(500, Math.floor(gold / 3))
+  const recommendedInvestment = Math.min(500, gold)
+
   return `あなたは戦国シミュレーションゲームの軍師です。
 プレイヤー（${leaderName}）の指示を解釈し、適切なツールを1つ呼び出してください。
 
@@ -169,6 +176,11 @@ export function buildPlayerCommandSystemPrompt(leaderName: string): string {
 - 攻撃は隣接する城にのみ可能
 - IDは正確に指定すること
 - 不明な点があれば確認してから実行
+
+【デフォルト値（指定がない場合）】
+- 徴兵: ${recommendedRecruitCount}人（金${gold}の1/3、上限500人。コスト1人2金）
+- 開発（農業・商業・城壁）: ${recommendedInvestment}金を投資
+- 攻撃: 出撃城の兵力の70%を派遣
 
 指示が曖昧な場合は、最も妥当な解釈で実行してください。`
 }

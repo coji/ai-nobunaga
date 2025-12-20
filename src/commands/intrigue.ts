@@ -1,5 +1,6 @@
 // 謀略コマンド
 
+import { EMOTIONS, INTRIGUE } from '../constants/index.js'
 import type { GameState, IntrigueAction } from '../types.js'
 import { BaseCommand } from './base.js'
 import {
@@ -75,8 +76,14 @@ export class BribeCommand extends BaseCommand {
     // 調略成功率の計算
     // 基本成功率: 金額 / 1000 * (100 - 忠誠度) / 100
     const baseLoyaltyFactor = (100 - targetBusho.emotions.loyalty) / 100
-    const goldFactor = Math.min(1, this.goldAmount / 1000)
-    const successRate = Math.min(0.9, baseLoyaltyFactor * goldFactor * multiplier)
+    const goldFactor = Math.min(
+      1,
+      this.goldAmount / INTRIGUE.BRIBE_GOLD_FACTOR_DIVISOR,
+    )
+    const successRate = Math.min(
+      INTRIGUE.BRIBE_MAX_SUCCESS_RATE,
+      baseLoyaltyFactor * goldFactor * multiplier,
+    )
 
     const stateChanges = [`${ctx.clan.name}の金: -${this.goldAmount}`]
 
@@ -108,7 +115,10 @@ export class BribeCommand extends BaseCommand {
             targetId: oldClanId,
             type: 'betrayal',
             description: `${clan.name}が${targetBusho.name}を調略し${castle.name}を奪取`,
-            emotionImpact: { loyalty: -20, discontent: 30 },
+            emotionImpact: {
+              loyalty: EMOTIONS.BETRAYAL_LOYALTY_IMPACT,
+              discontent: EMOTIONS.BETRAYAL_DISCONTENT_IMPACT,
+            },
           })
         }
       }
@@ -116,21 +126,38 @@ export class BribeCommand extends BaseCommand {
       // 武将の所属を変更
       newBusho.clanId = clanId
       newBusho.factionId = null
-      newBusho.emotions.loyalty = 50 // 寝返り直後は忠誠度中程度
+      newBusho.emotions.loyalty = INTRIGUE.BRIBE_SUCCESS_INITIAL_LOYALTY
       newBusho.emotions.discontent = 0
 
       stateChanges.push(`${targetBusho.name}が${clan.name}に寝返り`)
 
       const narrative = `${gradePrefix}${this.goldAmount}金で${targetBusho.name}の調略に成功！${castle ? `${castle.name}ごと寝返った。` : '配下に加わった。'}`
-      return createSuccessResult(ctx.newState, action, grade, narrative, stateChanges, narrative)
+      return createSuccessResult(
+        ctx.newState,
+        action,
+        grade,
+        narrative,
+        stateChanges,
+        narrative,
+      )
     } else {
       // 調略失敗 - 忠誠度が上がる（バレた反動）
-      newBusho.emotions.loyalty = Math.min(100, newBusho.emotions.loyalty + 10)
+      newBusho.emotions.loyalty = Math.min(
+        100,
+        newBusho.emotions.loyalty + INTRIGUE.BRIBE_FAILURE_LOYALTY_BOOST,
+      )
 
       stateChanges.push(`${targetBusho.name}の調略に失敗`)
 
       const narrative = `${targetBusho.name}への調略は失敗。${this.goldAmount}金を失った。`
-      return createSuccessResult(ctx.newState, action, 'failure', narrative, stateChanges, narrative)
+      return createSuccessResult(
+        ctx.newState,
+        action,
+        'failure',
+        narrative,
+        stateChanges,
+        narrative,
+      )
     }
   }
 }
@@ -138,9 +165,6 @@ export class BribeCommand extends BaseCommand {
 /** 暗殺コマンド */
 export class AssassinateCommand extends BaseCommand {
   readonly name = 'assassinate'
-
-  /** 暗殺コスト */
-  private static readonly COST = 500
 
   constructor(private readonly targetBushoId: string) {
     super()
@@ -158,7 +182,7 @@ export class AssassinateCommand extends BaseCommand {
 
   execute(state: GameState, clanId: string): CommandResult {
     const action = this.getAction()
-    const cost = AssassinateCommand.COST
+    const cost = INTRIGUE.ASSASSINATE_COST
 
     // バリデーション
     const clanError = this.validateClan(state, clanId)
@@ -181,7 +205,11 @@ export class AssassinateCommand extends BaseCommand {
 
     const goldError = this.validateGold(state, clanId, cost)
     if (goldError) {
-      return createFailureResult(state, action, `資金が不足しています（${cost}金必要）`)
+      return createFailureResult(
+        state,
+        action,
+        `資金が不足しています（${cost}金必要）`,
+      )
     }
 
     const ctx = this.prepareContext(state, clanId)
@@ -190,15 +218,20 @@ export class AssassinateCommand extends BaseCommand {
     const { grade, multiplier, narrative: gradePrefix } = this.rollGrade()
 
     // 暗殺成功率（基本20%、知略で補正）
-    const baseRate = 0.2
-    const successRate = Math.min(0.5, baseRate * multiplier)
+    const baseRate = INTRIGUE.ASSASSINATE_BASE_RATE
+    const successRate = Math.min(
+      INTRIGUE.ASSASSINATE_MAX_RATE,
+      baseRate * multiplier,
+    )
 
     const stateChanges = [`${ctx.clan.name}の金: -${cost}`]
 
     if (Math.random() < successRate) {
       // 暗殺成功
       const targetClanId = targetBusho.clanId
-      const targetClan = targetClanId ? ctx.newState.clanCatalog[targetClanId] : null
+      const targetClan = targetClanId
+        ? ctx.newState.clanCatalog[targetClanId]
+        : null
 
       // 当主だった場合の処理
       if (targetClan && targetClan.leaderId === this.targetBushoId) {
@@ -234,14 +267,24 @@ export class AssassinateCommand extends BaseCommand {
           targetId: targetClanId,
           type: 'family_killed',
           description: `${clan.name}が${targetBusho.name}を暗殺`,
-          emotionImpact: { loyalty: -30, discontent: 50 },
+          emotionImpact: {
+            loyalty: EMOTIONS.ASSASSINATION_LOYALTY_IMPACT,
+            discontent: EMOTIONS.ASSASSINATION_DISCONTENT_IMPACT,
+          },
         })
       }
 
       stateChanges.push(`${targetBusho.name}を暗殺`)
 
       const narrative = `${gradePrefix}${targetBusho.name}の暗殺に成功！`
-      return createSuccessResult(ctx.newState, action, grade, narrative, stateChanges, narrative)
+      return createSuccessResult(
+        ctx.newState,
+        action,
+        grade,
+        narrative,
+        stateChanges,
+        narrative,
+      )
     } else {
       // 暗殺失敗
       const targetClanId = targetBusho.clanId
@@ -266,7 +309,14 @@ export class AssassinateCommand extends BaseCommand {
       }
 
       const narrative = `${targetBusho.name}の暗殺に失敗。${cost}金を失い、敵対関係となった。`
-      return createSuccessResult(ctx.newState, action, 'failure', narrative, stateChanges, narrative)
+      return createSuccessResult(
+        ctx.newState,
+        action,
+        'failure',
+        narrative,
+        stateChanges,
+        narrative,
+      )
     }
   }
 }
