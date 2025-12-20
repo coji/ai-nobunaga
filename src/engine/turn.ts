@@ -60,7 +60,9 @@ function processDelegation(state: GameState): string[] {
         castle.defense = Math.min(100, castle.defense + growth)
         const soldierGrowth = Math.floor(growth * 15)
         castle.soldiers += soldierGrowth
-        changes.push(`⚖️ ${castle.name}: 農商防各+${growth} 兵+${soldierGrowth}（${castellan.name}）`)
+        changes.push(
+          `⚖️ ${castle.name}: 農商防各+${growth} 兵+${soldierGrowth}（${castellan.name}）`,
+        )
         break
       }
     }
@@ -147,6 +149,10 @@ export function processTurnEnd(state: GameState): string[] {
   // 武将の忠誠チェック（寝返り・独立）
   const betrayalChanges = checkBushoLoyalty(state)
   changes.push(...betrayalChanges)
+
+  // 滅亡した勢力の処理（城を全て失った勢力）
+  const destroyedChanges = processDestroyedClans(state)
+  changes.push(...destroyedChanges)
 
   state.turn++
   return changes
@@ -305,6 +311,43 @@ function handleBetrayalToCastle(
         `⚠️ ${busho.name}が${oldClan.name}を裏切り、${castle.name}ごと${newClan.name}に寝返った！`,
       )
     }
+  }
+
+  return changes
+}
+
+/** 滅亡した勢力の処理 - 城を全て失った勢力を除去し、武将を浪人化 */
+export function processDestroyedClans(state: GameState): string[] {
+  const changes: string[] = []
+  const clansToRemove: string[] = []
+
+  for (const clan of Object.values(state.clanCatalog)) {
+    if (clan.castleIds.length === 0) {
+      clansToRemove.push(clan.id)
+    }
+  }
+
+  for (const clanId of clansToRemove) {
+    const clan = state.clanCatalog[clanId]
+    if (!clan) continue
+
+    // 所属武将を浪人化
+    for (const busho of Object.values(state.bushoCatalog)) {
+      if (busho.clanId === clanId) {
+        busho.clanId = null
+        busho.factionId = null
+        changes.push(`${busho.name}は浪人となった`)
+      }
+    }
+
+    // 外交関係を削除
+    state.diplomacyRelations = state.diplomacyRelations.filter(
+      (r) => r.clan1Id !== clanId && r.clan2Id !== clanId,
+    )
+
+    // 勢力を削除
+    delete state.clanCatalog[clanId]
+    changes.push(`💀 ${clan.name}滅亡！`)
   }
 
   return changes

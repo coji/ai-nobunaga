@@ -2,7 +2,7 @@
 
 import { createCommand } from '../commands/index.js'
 import type { GameState, PersonalityTag } from '../types.js'
-import { ai, MODEL, MODEL_LITE, THINKING } from './client.js'
+import { ai, MODEL, MODEL_LITE } from './client.js'
 import {
   buildGameContextPrompt,
   buildPlayerCommandSystemPrompt,
@@ -15,7 +15,9 @@ function getPersonalityHints(personality: PersonalityTag[]): string {
 
   // 実利優先 → 内政重視
   if (personality.includes('実利優先')) {
-    hints.push('内政開発（agriculture/commerce）を優先せよ。攻撃は兵力に余裕がある時のみ。')
+    hints.push(
+      '内政開発（agriculture/commerce）を優先せよ。攻撃は兵力に余裕がある時のみ。',
+    )
   }
 
   // 義理重視 → 外交・同盟重視
@@ -25,7 +27,9 @@ function getPersonalityHints(personality: PersonalityTag[]): string {
 
   // 野心家 → 積極的だが準備も怠らない
   if (personality.includes('野心家')) {
-    hints.push('領土拡大を目指せ。ただし勝てる戦のみ挑め。兵力不足なら徴兵せよ。')
+    hints.push(
+      '領土拡大を目指せ。ただし勝てる戦のみ挑め。兵力不足なら徴兵せよ。',
+    )
   }
 
   // 猜疑心 → 防衛・徴兵重視
@@ -45,7 +49,9 @@ function getPersonalityHints(personality: PersonalityTag[]): string {
 
   // 革新的 → 積極的な開発
   if (personality.includes('革新的')) {
-    hints.push('新しき技術と商業で国を富ませよ。agriculture や commerce を発展させよ。')
+    hints.push(
+      '新しき技術と商業で国を富ませよ。agriculture や commerce を発展させよ。',
+    )
   }
 
   // 性格がない場合のデフォルト
@@ -135,8 +141,7 @@ export async function decideAIAction(
     // 同盟国がいなければ外交
     const hasAlliance = state.diplomacyRelations.some(
       (r) =>
-        r.type === 'alliance' &&
-        (r.clan1Id === clanId || r.clan2Id === clanId),
+        r.type === 'alliance' && (r.clan1Id === clanId || r.clan2Id === clanId),
     )
     if (!hasAlliance) {
       return 'diplomacy で同盟を結べ。孤立は危険。'
@@ -206,9 +211,8 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
           case 'attack':
             if (attackTargets.length > 0) {
               toolName = 'attack'
-              const fromCastle = state.castleCatalog[
-                decision.params.fromCastleId as string
-              ]
+              const fromCastle =
+                state.castleCatalog[decision.params.fromCastleId as string]
               const soldiers =
                 (decision.params.soldierCount as number) ||
                 (fromCastle ? Math.floor(fromCastle.soldiers * 0.7) : 500)
@@ -232,18 +236,28 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
     if (totalSoldiers < 500 && clan.gold >= 300) {
       // 徴兵
       toolName = 'recruit_soldiers'
-      toolParams = { castleId: firstCastleId, count: Math.min(300, Math.floor(clan.gold / 2)) }
+      toolParams = {
+        castleId: firstCastleId,
+        count: Math.min(300, Math.floor(clan.gold / 2)),
+      }
     } else if (clan.gold < 1000) {
       // 商業開発で金を稼ぐ
       toolName = 'develop_commerce'
-      toolParams = { castleId: firstCastleId, investment: Math.min(500, clan.gold) }
+      toolParams = {
+        castleId: firstCastleId,
+        investment: Math.min(500, clan.gold),
+      }
     } else if (totalSoldiers >= 3000) {
       // 攻撃可能で兵力十分なら攻撃
       const target = attackTargets[0]
       if (target) {
         const targetCastle = state.castleCatalog[target.to]
         const fromCastle = state.castleCatalog[target.from]
-        if (targetCastle && fromCastle && fromCastle.soldiers > targetCastle.soldiers * 1.2) {
+        if (
+          targetCastle &&
+          fromCastle &&
+          fromCastle.soldiers > targetCastle.soldiers * 1.2
+        ) {
           toolName = 'attack'
           toolParams = {
             fromCastleId: target.from,
@@ -257,7 +271,10 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
     // それでも行動が決まらなければ農業開発
     if (!toolName && clan.gold >= 100) {
       toolName = 'develop_agriculture'
-      toolParams = { castleId: firstCastleId, investment: Math.min(500, clan.gold) }
+      toolParams = {
+        castleId: firstCastleId,
+        investment: Math.min(500, clan.gold),
+      }
     }
   }
 
@@ -303,7 +320,6 @@ export async function executePlayerCommand(
     contents: userPrompt,
     config: {
       systemInstruction: systemPrompt,
-      thinkingConfig: { thinkingLevel: THINKING.PLAYER_COMMAND },
       tools: [
         {
           functionDeclarations: gameTools.filter((t) => t.name !== 'end_turn'),
