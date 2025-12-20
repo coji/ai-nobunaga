@@ -1,11 +1,15 @@
 // コマンドパターンの型定義
 
-import type {
-  ActionResult,
-  GameAction,
-  GameState,
-  ResultGrade,
-} from '../types.js'
+import type { ActionResult, GameAction, GameState, ResultGrade } from '../types.js'
+
+// engine/actions.ts のヘルパー関数を re-export
+export {
+  rollForGrade,
+  getGradeMultiplier,
+  getGradeNarrative,
+  getCriticalSuccessMultiplier,
+  getCriticalFailurePenalty,
+} from '../engine/actions.js'
 
 /** コマンドの実行結果 */
 export interface CommandResult {
@@ -28,44 +32,7 @@ export interface UndoableCommand extends GameCommand {
   undo(state: GameState): GameState
 }
 
-/** コマンド実行のヘルパー関数群 */
-
-// 結果グレードをロール
-export function rollForGrade(): ResultGrade {
-  const roll = Math.random()
-  if (roll < 0.05) return 'critical_failure'
-  if (roll < 0.15) return 'failure'
-  if (roll < 0.85) return 'success'
-  return 'critical_success'
-}
-
-// グレードに応じた倍率を取得
-export function getGradeMultiplier(grade: ResultGrade): number {
-  switch (grade) {
-    case 'critical_failure':
-      return 0
-    case 'failure':
-      return 0.5
-    case 'success':
-      return 1.0
-    case 'critical_success':
-      return 1.5
-  }
-}
-
-// グレードに応じたナラティブプレフィックス
-export function getGradeNarrative(grade: ResultGrade): string {
-  switch (grade) {
-    case 'critical_failure':
-      return '【大失敗】'
-    case 'failure':
-      return '【失敗】'
-    case 'success':
-      return ''
-    case 'critical_success':
-      return '【大成功】'
-  }
-}
+/** コマンド結果のヘルパー関数群 */
 
 // 失敗結果を生成
 export function createFailureResult(
