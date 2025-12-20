@@ -1,5 +1,13 @@
 // コマンドモジュール - re-export
 
+export { normalizeToolName, toolAliases } from './aliases.js'
+export {
+  BaseCommand,
+  CastleCommand,
+  type CastleCommandContext,
+  type CommandContext,
+  type GradeInfo,
+} from './base.js'
 export { DevelopAgricultureCommand, DevelopCommerceCommand } from './domestic.js'
 export {
   ProposeAllianceCommand,

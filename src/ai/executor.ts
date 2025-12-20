@@ -1,5 +1,6 @@
 // ツール実行
 
+import { normalizeToolName } from '../commands/aliases.js'
 import { createCommand } from '../commands/index.js'
 import type { ActionResult, GameState } from '../types.js'
 
@@ -8,35 +9,6 @@ interface ExecuteResult {
   narrative: string
   endTurn: boolean
   newState?: GameState
-}
-
-// LLMがよく間違えるツール名のエイリアス
-const toolAliases: Record<string, string> = {
-  improve_commerce: 'develop_commerce',
-  improve_agriculture: 'develop_agriculture',
-  build_commerce: 'develop_commerce',
-  build_agriculture: 'develop_agriculture',
-  increase_commerce: 'develop_commerce',
-  increase_agriculture: 'develop_agriculture',
-  hire_soldiers: 'recruit_soldiers',
-  train_soldiers: 'recruit_soldiers',
-  raise_soldiers: 'recruit_soldiers',
-  strengthen_defense: 'fortify',
-  build_fortification: 'fortify',
-  siege: 'attack',
-  assault: 'attack',
-  invade: 'attack',
-  alliance: 'propose_alliance',
-  form_alliance: 'propose_alliance',
-  gift: 'send_gift',
-  give_gift: 'send_gift',
-  intimidate: 'threaten',
-  coerce: 'threaten',
-  corrupt: 'bribe',
-  buy_off: 'bribe',
-  rumor: 'spread_rumor',
-  spread_rumors: 'spread_rumor',
-  gossip: 'spread_rumor',
 }
 
 export function executeToolCall(
@@ -54,7 +26,7 @@ export function executeToolCall(
   }
 
   // ツール名を正規化
-  const normalizedToolName = toolAliases[toolName] || toolName
+  const normalizedToolName = normalizeToolName(toolName)
 
   // コマンドを生成
   const command = createCommand(normalizedToolName, args)

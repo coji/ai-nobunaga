@@ -1,6 +1,7 @@
 // 行動実行ヘルパー関数
 // 注: 状態変更ロジックは各コマンドに移行済み
 
+import { CRITICAL } from '../constants/index.js'
 import type { ResultGrade } from '../types.js'
 
 /**
@@ -11,9 +12,9 @@ import type { ResultGrade } from '../types.js'
 export function rollForGrade(baseSuccess = true): ResultGrade {
   const roll = Math.random()
   if (baseSuccess) {
-    return roll < 0.15 ? 'critical_success' : 'success'
+    return roll < CRITICAL.RATE ? 'critical_success' : 'success'
   } else {
-    return roll < 0.15 ? 'critical_failure' : 'failure'
+    return roll < CRITICAL.RATE ? 'critical_failure' : 'failure'
   }
 }
 
@@ -21,14 +22,17 @@ export function rollForGrade(baseSuccess = true): ResultGrade {
  * 大成功時の効果倍率 (1.5〜2.0倍)
  */
 export function getCriticalSuccessMultiplier(): number {
-  return 1.5 + Math.random() * 0.5
+  return (
+    CRITICAL.SUCCESS_MULTIPLIER_MIN +
+    Math.random() * CRITICAL.SUCCESS_MULTIPLIER_BONUS
+  )
 }
 
 /**
  * 大失敗時のペナルティ倍率 (0.5〜1.5倍の追加コスト等)
  */
 export function getCriticalFailurePenalty(): number {
-  return 0.5 + Math.random()
+  return CRITICAL.FAILURE_PENALTY_MIN + Math.random() * CRITICAL.FAILURE_PENALTY_BONUS
 }
 
 /**
@@ -39,7 +43,7 @@ export function getGradeMultiplier(grade: ResultGrade): number {
     case 'critical_success':
       return getCriticalSuccessMultiplier()
     case 'critical_failure':
-      return 0.5
+      return CRITICAL.FAILURE_MULTIPLIER
     case 'success':
       return 1.0
     case 'failure':
