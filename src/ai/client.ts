@@ -1,8 +1,9 @@
 // Gemini AI クライアント
 
 import { GoogleGenAI, ThinkingLevel } from '@google/genai'
+import { isUsageTrackingEnabled, recordUsage } from './usage.js'
 
-export const ai = new GoogleGenAI({
+const baseAi = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY ?? '',
 })
 
@@ -18,4 +19,30 @@ export const THINKING = {
   COUNCIL: ThinkingLevel.LOW,
   // 書状生成
   LETTER: ThinkingLevel.LOW,
+}
+
+// 使用量トラッキング付きのラッパー
+export const ai = {
+  models: {
+    generateContent: async (
+      params: Parameters<typeof baseAi.models.generateContent>[0],
+    ) => {
+      const response = await baseAi.models.generateContent(params)
+
+      // 使用量を記録
+      if (isUsageTrackingEnabled() && response.usageMetadata) {
+        const model =
+          typeof params === 'object' && 'model' in params
+            ? (params.model as string)
+            : 'unknown'
+        recordUsage(
+          model,
+          response.usageMetadata.promptTokenCount ?? 0,
+          response.usageMetadata.candidatesTokenCount ?? 0,
+        )
+      }
+
+      return response
+    },
+  },
 }

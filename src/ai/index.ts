@@ -15,6 +15,15 @@ export {
   type RetainerComment,
 } from './advisor.js'
 export { MODEL, ai } from './client.js'
+export {
+  enableUsageTracking,
+  formatUsageSummary,
+  getUsageSummary,
+  isUsageTrackingEnabled,
+  resetUsage,
+  type UsageRecord,
+  type UsageSummary,
+} from './usage.js'
 export { executeToolCall } from './executor.js'
 export { buildGameContextPrompt, getPersonalityDescription } from './prompts.js'
 export { gameTools } from './tools.js'

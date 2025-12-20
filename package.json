@@ -8,7 +8,7 @@
     "信長": "./dist/index.js"
   },
   "scripts": {
-    "dev": "tsx src/index.tsx",
+    "dev": "tsx src/index.tsx --show-cost",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "biome lint .",

@@ -3,6 +3,7 @@
 import { Box, Text, useApp, useInput } from 'ink'
 import Spinner from 'ink-spinner'
 import { useEffect } from 'react'
+import { getUsageSummary, isUsageTrackingEnabled } from '../ai/usage.js'
 import { useGameStore } from '../store/gameStore.js'
 import type { GameState } from '../types.js'
 
@@ -18,9 +19,10 @@ import {
 
 interface Props {
   initialState: GameState
+  showCost?: boolean
 }
 
-export function GameUI({ initialState }: Props) {
+export function GameUI({ initialState, showCost = false }: Props) {
   const { exit } = useApp()
 
   // Store から状態とアクションを取得
@@ -180,6 +182,12 @@ export function GameUI({ initialState }: Props) {
           <Text color="magenta">
             {actions.actionsRemaining}/{actions.maxActions}
           </Text>
+          {showCost && isUsageTrackingEnabled() && (
+            <>
+              {' '}
+              | LLM: <Text color="gray">${getUsageSummary().totalCostUSD.toFixed(4)}</Text>
+            </>
+          )}
         </Text>
       </Box>
 

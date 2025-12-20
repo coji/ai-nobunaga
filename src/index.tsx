@@ -5,10 +5,34 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import readline from 'node:readline'
+import { enableUsageTracking } from './ai/usage.js'
 import { GameUI } from './components/GameUI.js'
 import { createInitialGameState } from './data/scenario.js'
 
 const CONFIG_PATH = path.join(os.homedir(), '.nobunaga')
+
+// CLIオプションをパース
+function parseArgs(): { showCost: boolean; help: boolean } {
+  const args = process.argv.slice(2)
+  return {
+    showCost: args.includes('--show-cost') || args.includes('-c'),
+    help: args.includes('--help') || args.includes('-h'),
+  }
+}
+
+// ヘルプを表示
+function showHelp(): void {
+  console.log(`
+npx 信長 - AI戦国シミュレーション
+
+使い方:
+  npx 信長 [オプション]
+
+オプション:
+  -c, --show-cost   LLM使用コストを画面に表示
+  -h, --help        このヘルプを表示
+`)
+}
 
 // 設定ファイルからAPIキーを読み込む
 function loadApiKey(): string | null {
@@ -51,6 +75,20 @@ async function promptApiKey(): Promise<string> {
 }
 
 async function main() {
+  // CLIオプションをパース
+  const options = parseArgs()
+
+  // ヘルプ表示
+  if (options.help) {
+    showHelp()
+    process.exit(0)
+  }
+
+  // コスト表示が有効な場合はトラッキングを開始
+  if (options.showCost) {
+    enableUsageTracking()
+  }
+
   // 1. 環境変数をチェック
   let apiKey = process.env.GEMINI_API_KEY
 
@@ -80,7 +118,7 @@ async function main() {
   console.clear()
   console.log('npx 信長 を起動中...\n')
 
-  render(<GameUI initialState={initialState} />)
+  render(<GameUI initialState={initialState} showCost={options.showCost} />)
 }
 
 main()
