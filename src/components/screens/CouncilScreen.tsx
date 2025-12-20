@@ -10,6 +10,7 @@ import {
   generateNarrative,
   generateRetainerComments,
   summarizeCouncilProposals,
+  type ActionHistoryEntry,
   type CouncilProposal,
   type CouncilStatement,
   type RetainerComment,
@@ -105,6 +106,8 @@ export function CouncilScreen({
   const [showDiscussionLog, setShowDiscussionLog] = useState(false)
   const [reportUsed, setReportUsed] = useState(false) // 状況報告は1ターン1回
   const [reportContent, setReportContent] = useState<string | null>(null)
+  // 同一ターン内のアクション履歴（次の評定に引き継ぐ）
+  const [actionHistory, setActionHistory] = useState<ActionHistoryEntry[]>([])
 
   const playerClan = state.clanCatalog[playerClanId]
   if (!playerClan) {
@@ -190,7 +193,7 @@ ${enemyInfo.join('\n')}
     setStatements([])
     setCurrentRound(1)
 
-    // 2ラウンドの議論を実行
+    // 2ラウンドの議論を実行（アクション履歴を渡す）
     let allStatements: CouncilStatement[] = []
 
     for (let round = 1; round <= 2; round++) {
@@ -201,6 +204,7 @@ ${enemyInfo.join('\n')}
         value,
         allStatements,
         round,
+        actionHistory, // 同一ターン内の過去のアクション履歴
       )
       allStatements = [...allStatements, ...roundStatements]
       setStatements([...allStatements])
@@ -372,6 +376,19 @@ ${enemyInfo.join('\n')}
       retainerComments,
     })
     setPhase('result')
+
+    // アクション履歴に追加（次の評定で参照できるように）
+    setActionHistory((prev) => [
+      ...prev,
+      {
+        topic: topic ?? '',
+        proposal: proposal.title,
+        result: narrative,
+        grade,
+        supporters: proposal.supporters,
+        opponents: proposal.opponents,
+      },
+    ])
 
     // 親コンポーネントに通知
     onExecuteProposal?.(execResult)

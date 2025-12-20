@@ -8,6 +8,7 @@ export {
   generateRetainerComments,
   holdCouncil,
   summarizeCouncilProposals,
+  type ActionHistoryEntry,
   type CouncilOpinion,
   type CouncilProposal,
   type CouncilStatement,

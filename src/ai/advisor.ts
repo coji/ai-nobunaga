@@ -1,12 +1,20 @@
 // 軍師AI・書状生成・ナレーション
 
-import type { GameState, Letter } from '../types.js'
+import type { Busho, GameState, Letter, ResultGrade } from '../types.js'
 import { ai, MODEL, MODEL_LITE, THINKING } from './client.js'
 import { buildGameContextPrompt } from './prompts.js'
 
 // === 評定（複数武将による議論） ===
 
-import type { Busho } from '../types.js'
+/** 同一ターン内のアクション履歴（評定間で共有） */
+export interface ActionHistoryEntry {
+  topic: string // 議題
+  proposal: string // 選択された提案
+  result: string // 結果の説明
+  grade: ResultGrade // 成功度
+  supporters: string[] // 賛成した武将
+  opponents: string[] // 反対した武将
+}
 
 export interface CouncilOpinion {
   bushoId: string
@@ -273,6 +281,7 @@ export async function conductCouncilRound(
   topic: string,
   previousStatements: CouncilStatement[],
   round: number,
+  actionHistory: ActionHistoryEntry[] = [], // 同一ターン内の過去のアクション履歴
 ): Promise<CouncilStatement[]> {
   const clan = state.clanCatalog[clanId]
   if (!clan) {
@@ -324,6 +333,24 @@ export async function conductCouncilRound(
           })
           .join('\n')
       : '（まだ誰も発言していない）'
+
+  // 同一ターン内の過去のアクション履歴を文字列化
+  const actionHistoryText =
+    actionHistory.length > 0
+      ? actionHistory
+          .map((a, i) => {
+            const gradeText =
+              a.grade === 'critical_success'
+                ? '大成功'
+                : a.grade === 'critical_failure'
+                  ? '大失敗'
+                  : a.grade === 'success'
+                    ? '成功'
+                    : '失敗'
+            return `${i + 1}. 「${a.topic}」→${a.proposal}（${gradeText}）: ${a.result}`
+          })
+          .join('\n')
+      : null
 
   // 代表者のみが発言（たまに他の武将に話をふる）
   const statements = await Promise.all(
@@ -432,15 +459,20 @@ ${otherRetainerNames.length > 0 ? `\n【同席しているが発言していな�
         ? `\n【特別指示】発言の中で「${delegateTarget}」に意見を求めよ（例：「${delegateTarget}殿はいかがお考えか」）`
         : ''
 
-      const prompt = `${gameContext}
+      // アクション履歴があれば追加
+      const actionHistorySection = actionHistoryText
+        ? `\n【本日の評定で既に行った行動】\n${actionHistoryText}\n※これらの結果を踏まえて議論せよ。成功した行動は評価し、失敗した行動からは教訓を得よ。\n`
+        : ''
 
+      const prompt = `${gameContext}
+${actionHistorySection}
 主君${leader.name}殿が評定で問うておられる:
 「${topic}」
 
 これまでの議論:
 ${discussionSoFar}
 
-${busho.name}として、これまでの議論を踏まえて意見を述べよ。${delegateInstruction}
+${busho.name}として、これまでの議論${actionHistoryText ? 'と本日既に行った行動の結果' : ''}を踏まえて意見を述べよ。${delegateInstruction}
 
 JSON形式で出力:
 \`\`\`json
@@ -765,8 +797,6 @@ export async function generateNarrative(
 }
 
 // === 行動結果に対する家臣コメント生成 ===
-
-import type { ResultGrade } from '../types.js'
 
 export interface RetainerComment {
   bushoName: string
