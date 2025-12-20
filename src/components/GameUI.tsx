@@ -80,7 +80,7 @@ export function GameUI({ initialState }: Props) {
 
     // 選択
     if (key.return) {
-      const playerClan = gameState.clanCatalog.get(gameState.playerClanId)
+      const playerClan = gameState.clanCatalog[gameState.playerClanId]
       if (!playerClan) return
 
       const screenContext: ScreenContext = {
@@ -102,7 +102,7 @@ export function GameUI({ initialState }: Props) {
       nav.setSelectedIndex(num - 1)
       setTimeout(() => {
         if (!gameState) return
-        const playerClan = gameState.clanCatalog.get(gameState.playerClanId)
+        const playerClan = gameState.clanCatalog[gameState.playerClanId]
         if (!playerClan) return
 
         const screenContext: ScreenContext = {
@@ -131,11 +131,11 @@ export function GameUI({ initialState }: Props) {
     )
   }
 
-  const playerClan = gameState.clanCatalog.get(gameState.playerClanId)
+  const playerClan = gameState.clanCatalog[gameState.playerClanId]
   if (!playerClan) {
     throw new Error(`Clan not found: ${gameState.playerClanId}`)
   }
-  const playerLeader = gameState.bushoCatalog.get(playerClan.leaderId)
+  const playerLeader = gameState.bushoCatalog[playerClan.leaderId]
   if (!playerLeader) {
     throw new Error(`Leader not found: ${playerClan.leaderId}`)
   }
@@ -171,8 +171,8 @@ export function GameUI({ initialState }: Props) {
           <Text color="green">{playerClan.food}</Text> | 兵:{' '}
           <Text color="red">
             {playerClan.castleIds.reduce(
-              (sum, id) =>
-                sum + (gameState.castleCatalog.get(id)?.soldiers || 0),
+              (sum: number, id: string) =>
+                sum + (gameState.castleCatalog[id]?.soldiers || 0),
               0,
             )}
           </Text>{' '}

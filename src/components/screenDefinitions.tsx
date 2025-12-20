@@ -94,7 +94,7 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
     render: ({ selectedIndex }) => <StatusScreen selectedIndex={selectedIndex} />,
     onSelect: (ctx) => {
       // 選択した勢力が自国なら城選択画面へ
-      const clans = [...ctx.state.clanCatalog.values()]
+      const clans = Object.values(ctx.state.clanCatalog)
       const selectedClan = clans[ctx.selectedIndex]
       if (selectedClan && selectedClan.id === ctx.state.playerClanId) {
         ctx.pushScreen('castle_select')
@@ -112,7 +112,7 @@ export const screenDefinitions: Record<Screen, ScreenDefinition> = {
     ),
     onSelect: (ctx) => {
       // 選択した城の委任設定画面へ
-      const playerClan = ctx.state.clanCatalog.get(ctx.state.playerClanId)
+      const playerClan = ctx.state.clanCatalog[ctx.state.playerClanId]
       if (playerClan) {
         const castleId = playerClan.castleIds[ctx.selectedIndex]
         if (castleId) {

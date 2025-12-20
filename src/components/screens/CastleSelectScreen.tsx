@@ -25,7 +25,7 @@ export function CastleSelectScreen({ selectedIndex }: Props) {
 
   if (!state) return null
 
-  const playerClan = state.clanCatalog.get(playerClanId)
+  const playerClan = state.clanCatalog[playerClanId]
   if (!playerClan) return null
 
   return (
@@ -34,11 +34,11 @@ export function CastleSelectScreen({ selectedIndex }: Props) {
         城選択 [↑↓で選択] [Enter] 委任設定 [ESC] 戻る
       </Text>
       {playerClan.castleIds.map((castleId, index) => {
-        const castle = state.castleCatalog.get(castleId)
+        const castle = state.castleCatalog[castleId]
         if (!castle) return null
 
         const castellan = castle.castellanId
-          ? state.bushoCatalog.get(castle.castellanId)
+          ? state.bushoCatalog[castle.castellanId]
           : null
         const isSelected = index === selectedIndex
         const loyaltyColor = getLoyaltyColor(castle.loyalty)

@@ -76,8 +76,8 @@ function executeDomesticAction(
   clanId: string,
   action: DomesticAction,
 ): ActionResult {
-  const castle = state.castleCatalog.get(action.targetId)
-  const clan = state.clanCatalog.get(clanId)
+  const castle = state.castleCatalog[action.targetId]
+  const clan = state.clanCatalog[clanId]
   if (!castle || !clan) {
     return {
       success: false,
@@ -87,7 +87,7 @@ function executeDomesticAction(
       stateChanges: [],
     }
   }
-  const leader = state.bushoCatalog.get(clan.leaderId)
+  const leader = state.bushoCatalog[clan.leaderId]
   if (!leader) {
     return {
       success: false,
@@ -101,7 +101,7 @@ function executeDomesticAction(
 
   // 内政担当を取得（城主 > 当主）
   const administrator = castle.castellanId
-    ? state.bushoCatalog.get(castle.castellanId)
+    ? state.bushoCatalog[castle.castellanId]
     : leader
   const adminPolitics = administrator?.politics ?? leader.politics
 
@@ -188,8 +188,8 @@ function executeDiplomacyAction(
   action: DiplomacyAction,
 ): ActionResult {
   const changes: string[] = []
-  const clan = state.clanCatalog.get(clanId)
-  const targetClan = state.clanCatalog.get(action.targetId)
+  const clan = state.clanCatalog[clanId]
+  const targetClan = state.clanCatalog[action.targetId]
   if (!clan || !targetClan) {
     return {
       success: false,
@@ -199,7 +199,7 @@ function executeDiplomacyAction(
       stateChanges: [],
     }
   }
-  const ownLeader = state.bushoCatalog.get(clan.leaderId)
+  const ownLeader = state.bushoCatalog[clan.leaderId]
   if (!ownLeader) {
     return {
       success: false,
@@ -216,7 +216,7 @@ function executeDiplomacyAction(
   const randomBonus = (Math.random() - 0.5) * 0.2
 
   // 外交行動の成功率計算（リスク許容度と相手の感情を考慮）
-  const leader = state.bushoCatalog.get(targetClan.leaderId)
+  const leader = state.bushoCatalog[targetClan.leaderId]
   if (!leader) {
     return {
       success: false,
@@ -438,8 +438,8 @@ function executeMilitaryAction(
   clanId: string,
   action: MilitaryAction,
 ): ActionResult {
-  const targetCastle = state.castleCatalog.get(action.targetId)
-  const clan = state.clanCatalog.get(clanId)
+  const targetCastle = state.castleCatalog[action.targetId]
+  const clan = state.clanCatalog[clanId]
   if (!targetCastle || !clan) {
     return {
       success: false,
@@ -449,7 +449,7 @@ function executeMilitaryAction(
       stateChanges: [],
     }
   }
-  const leader = state.bushoCatalog.get(clan.leaderId)
+  const leader = state.bushoCatalog[clan.leaderId]
   if (!leader) {
     return {
       success: false,
@@ -463,7 +463,7 @@ function executeMilitaryAction(
 
   // 軍事担当を取得（城主 > 当主）
   const commander = targetCastle.castellanId
-    ? state.bushoCatalog.get(targetCastle.castellanId)
+    ? state.bushoCatalog[targetCastle.castellanId]
     : leader
 
   if (action.type === 'recruit_soldiers') {
@@ -558,7 +558,7 @@ function executeMilitaryAction(
   }
 
   if (action.type === 'attack') {
-    const fromCastle = state.castleCatalog.get(action.fromCastleId || '')
+    const fromCastle = state.castleCatalog[action.fromCastleId || '']
     if (!fromCastle) {
       return {
         success: false,
@@ -575,15 +575,15 @@ function executeMilitaryAction(
 
     // 攻撃側の指揮官を取得（城主 > 当主）
     const attackCommander = fromCastle.castellanId
-      ? state.bushoCatalog.get(fromCastle.castellanId)
+      ? state.bushoCatalog[fromCastle.castellanId]
       : leader
     // 防御側の指揮官を取得（城主 > 当主）
-    const defenderClan = state.clanCatalog.get(targetCastle.ownerId)
+    const defenderClan = state.clanCatalog[targetCastle.ownerId]
     const defenderLeader = defenderClan
-      ? state.bushoCatalog.get(defenderClan.leaderId)
+      ? state.bushoCatalog[defenderClan.leaderId]
       : undefined
     const defenseCommander = targetCastle.castellanId
-      ? state.bushoCatalog.get(targetCastle.castellanId)
+      ? state.bushoCatalog[targetCastle.castellanId]
       : defenderLeader
 
     // 指揮官の武勇で攻撃力・防御力にボーナス（武勇50で1.0倍、100で1.5倍）
@@ -673,7 +673,7 @@ function executeMilitaryAction(
         // 敗北側: 15%討死、10%捕縛
         if (!isLeader && fateRoll < 0.15) {
           // 討死
-          state.bushoCatalog.delete(general.id)
+          delete state.bushoCatalog[general.id]
           // 城主から外す
           if (side === '攻撃' && fromCastle.castellanId === general.id) {
             fromCastle.castellanId = null
@@ -702,7 +702,7 @@ function executeMilitaryAction(
       } else {
         // 勝利側でも3%で討死（流れ矢など）
         if (!isLeader && Math.random() < 0.03) {
-          state.bushoCatalog.delete(general.id)
+          delete state.bushoCatalog[general.id]
           if (side === '攻撃' && fromCastle.castellanId === general.id) {
             fromCastle.castellanId = null
           }
@@ -721,7 +721,7 @@ function executeMilitaryAction(
     if (attackerWon) {
       // 城を奪取
       const previousOwner = targetCastle.ownerId
-      const previousClan = state.clanCatalog.get(previousOwner)
+      const previousClan = state.clanCatalog[previousOwner]
       if (previousClan) {
         previousClan.castleIds = previousClan.castleIds.filter(
           (id) => id !== targetCastle.id,
@@ -788,7 +788,7 @@ function executeIntrigueAction(
   clanId: string,
   action: IntrigueAction,
 ): ActionResult {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) {
     return {
       success: false,
@@ -798,7 +798,7 @@ function executeIntrigueAction(
       stateChanges: [],
     }
   }
-  const leader = state.bushoCatalog.get(clan.leaderId)
+  const leader = state.bushoCatalog[clan.leaderId]
   if (!leader) {
     return {
       success: false,
@@ -811,7 +811,7 @@ function executeIntrigueAction(
   const changes: string[] = []
 
   // 謀略担当を取得（配下で最も知略が高い武将）
-  const clanBusho = [...state.bushoCatalog.values()].filter(
+  const clanBusho = Object.values(state.bushoCatalog).filter(
     (b) => b.clanId === clanId && b.id !== leader.id,
   )
   const spymaster =
@@ -862,7 +862,7 @@ function executeIntrigueAction(
   const grade = rollForGrade(baseSuccess)
 
   if (baseSuccess) {
-    const target = state.bushoCatalog.get(action.targetId)
+    const target = state.bushoCatalog[action.targetId]
     if (target) {
       // 大成功時は効果倍増
       const effectMultiplier = grade === 'critical_success' ? 1.5 : 1.0
@@ -879,7 +879,7 @@ function executeIntrigueAction(
           // 忠誠が30以下になったら寝返り判定（当主は寝返らない）
           const originalClanId = target.clanId
           const originalClan = originalClanId
-            ? state.clanCatalog.get(originalClanId)
+            ? state.clanCatalog[originalClanId]
             : null
           const isLeader = originalClan?.leaderId === target.id
 
@@ -890,7 +890,7 @@ function executeIntrigueAction(
 
             // 城主だった場合、城ごと寝返る！
             let castleDefected = false
-            for (const [, castle] of state.castleCatalog) {
+            for (const castle of Object.values(state.castleCatalog)) {
               if (
                 castle.castellanId === target.id &&
                 castle.ownerId === originalClanId
@@ -953,7 +953,7 @@ function executeIntrigueAction(
         case 'assassinate':
           // 暗殺成功（武将を除去）
           if (target.clanId) {
-            const targetClan = state.clanCatalog.get(target.clanId)
+            const targetClan = state.clanCatalog[target.clanId]
             if (targetClan && targetClan.leaderId === target.id) {
               if (grade === 'critical_success') {
                 changes.push(
@@ -970,7 +970,7 @@ function executeIntrigueAction(
               }
             }
           }
-          state.bushoCatalog.delete(target.id)
+          delete state.bushoCatalog[target.id]
           break
         case 'spread_rumor': {
           // 不満増加 20〜35 + 知略ボーナス
@@ -1009,11 +1009,11 @@ function executeIntrigueAction(
     // 失敗
     if (grade === 'critical_failure') {
       // 大失敗: 発覚して関係悪化、場合によっては怨恨
-      const target = state.bushoCatalog.get(action.targetId)
+      const target = state.bushoCatalog[action.targetId]
       if (target?.clanId) {
-        const targetClan = state.clanCatalog.get(target.clanId)
+        const targetClan = state.clanCatalog[target.clanId]
         if (targetClan) {
-          const targetLeader = state.bushoCatalog.get(targetClan.leaderId)
+          const targetLeader = state.bushoCatalog[targetClan.leaderId]
           if (targetLeader) {
             targetLeader.emotions.discontent = Math.min(
               100,

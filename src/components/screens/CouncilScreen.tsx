@@ -106,17 +106,17 @@ export function CouncilScreen({
   const [reportUsed, setReportUsed] = useState(false) // 状況報告は1ターン1回
   const [reportContent, setReportContent] = useState<string | null>(null)
 
-  const playerClan = state.clanCatalog.get(playerClanId)
+  const playerClan = state.clanCatalog[playerClanId]
   if (!playerClan) {
     throw new Error(`Clan not found: ${playerClanId}`)
   }
-  const leader = state.bushoCatalog.get(playerClan.leaderId)
+  const leader = state.bushoCatalog[playerClan.leaderId]
   if (!leader) {
     throw new Error(`Leader not found: ${playerClan.leaderId}`)
   }
 
   // 家臣一覧を取得
-  const retainers = [...state.bushoCatalog.values()]
+  const retainers = Object.values(state.bushoCatalog)
     .filter((b) => b.clanId === playerClanId && b.id !== playerClan.leaderId)
     .slice(0, 4)
 
@@ -130,23 +130,23 @@ export function CouncilScreen({
     // 状況をまとめるプロンプト
     const ownCastles = playerClan.castleIds
       .map((id) => {
-        const c = state.castleCatalog.get(id)
+        const c = state.castleCatalog[id]
         if (!c) return null
         return `${c.name}: 兵${c.soldiers}, 防御${c.defense}, 農業${c.agriculture}, 商業${c.commerce}`
       })
       .filter(Boolean)
 
-    const enemyInfo = [...state.clanCatalog.values()]
+    const enemyInfo = Object.values(state.clanCatalog)
       .filter((c) => c.id !== playerClanId)
       .map((c) => {
-        const l = state.bushoCatalog.get(c.leaderId)
+        const l = state.bushoCatalog[c.leaderId]
         const relation = state.diplomacyRelations.find(
           (r) =>
             (r.clan1Id === playerClanId && r.clan2Id === c.id) ||
             (r.clan1Id === c.id && r.clan2Id === playerClanId),
         )
         const totalSoldiers = c.castleIds.reduce(
-          (sum, id) => sum + (state.castleCatalog.get(id)?.soldiers || 0),
+          (sum, id) => sum + (state.castleCatalog[id]?.soldiers || 0),
           0,
         )
         return `${c.name}(${l?.name}): 城${c.castleIds.length}, 総兵${totalSoldiers}, 関係=${relation?.type || '中立'}`
@@ -329,15 +329,16 @@ ${enemyInfo.join('\n')}
 
     setPhase('executing')
 
-    const { result, narrative } = executeToolCall(
+    const cmdResult = executeToolCall(
       playerClanId,
       proposal.tool,
       proposal.args,
     )
 
-    const success = result?.success ?? false
+    const success = cmdResult?.result?.success ?? false
+    const narrative = cmdResult?.narrative ?? ''
     const grade: ResultGrade =
-      result?.grade ?? (success ? 'success' : 'failure')
+      cmdResult?.result?.grade ?? (success ? 'success' : 'failure')
 
     // ナレーションを生成
     const richNarrative = await generateNarrative(

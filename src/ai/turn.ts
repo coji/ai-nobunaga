@@ -1,8 +1,8 @@
 // AIターン・プレイヤーコマンド実行
 
+import { createCommand } from '../commands/index.js'
 import type { GameState, PersonalityTag } from '../types.js'
 import { ai, MODEL, MODEL_LITE, THINKING } from './client.js'
-import { executeToolCall } from './executor.js'
 import {
   buildGameContextPrompt,
   buildPlayerCommandSystemPrompt,
@@ -79,11 +79,11 @@ export async function decideAIAction(
   state: GameState,
   clanId: string,
 ): Promise<AIDecision> {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) {
     throw new Error(`Clan not found: ${clanId}`)
   }
-  const leader = state.bushoCatalog.get(clan.leaderId)
+  const leader = state.bushoCatalog[clan.leaderId]
   if (!leader) {
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
@@ -95,10 +95,10 @@ export async function decideAIAction(
   // 隣接する敵城を取得
   const attackTargets: { from: string; to: string }[] = []
   for (const castleId of ownCastleIds) {
-    const castle = state.castleCatalog.get(castleId)
+    const castle = state.castleCatalog[castleId]
     if (!castle) continue
     for (const adjId of castle.adjacentCastleIds) {
-      const adj = state.castleCatalog.get(adjId)
+      const adj = state.castleCatalog[adjId]
       if (adj && adj.ownerId !== clanId) {
         attackTargets.push({ from: castleId, to: adjId })
       }
@@ -110,7 +110,7 @@ export async function decideAIAction(
 
   // 総兵力を計算
   const totalSoldiers = ownCastleIds.reduce((sum, id) => {
-    const c = state.castleCatalog.get(id)
+    const c = state.castleCatalog[id]
     return sum + (c?.soldiers ?? 0)
   }, 0)
 
@@ -127,7 +127,7 @@ export async function decideAIAction(
     // 攻撃可能で兵力十分なら攻撃を検討
     const firstTarget = attackTargets[0]
     if (firstTarget && totalSoldiers >= 800) {
-      const targetCastle = state.castleCatalog.get(firstTarget.to)
+      const targetCastle = state.castleCatalog[firstTarget.to]
       if (targetCastle && totalSoldiers > targetCastle.soldiers * 1.5) {
         return `attack で ${targetCastle.name} を攻めるチャンス。`
       }
@@ -206,9 +206,9 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
           case 'attack':
             if (attackTargets.length > 0) {
               toolName = 'attack'
-              const fromCastle = state.castleCatalog.get(
-                decision.params.fromCastleId as string,
-              )
+              const fromCastle = state.castleCatalog[
+                decision.params.fromCastleId as string
+              ]
               const soldiers =
                 (decision.params.soldierCount as number) ||
                 (fromCastle ? Math.floor(fromCastle.soldiers * 0.7) : 500)
@@ -241,8 +241,8 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
       // 攻撃可能で兵力十分なら攻撃
       const target = attackTargets[0]
       if (target) {
-        const targetCastle = state.castleCatalog.get(target.to)
-        const fromCastle = state.castleCatalog.get(target.from)
+        const targetCastle = state.castleCatalog[target.to]
+        const fromCastle = state.castleCatalog[target.from]
         if (targetCastle && fromCastle && fromCastle.soldiers > targetCastle.soldiers * 1.2) {
           toolName = 'attack'
           toolParams = {
@@ -280,11 +280,11 @@ export async function executePlayerCommand(
   clanId: string,
   command: string,
 ): Promise<PlayerCommandResult> {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) {
     throw new Error(`Clan not found: ${clanId}`)
   }
-  const leader = state.bushoCatalog.get(clan.leaderId)
+  const leader = state.bushoCatalog[clan.leaderId]
   if (!leader) {
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
@@ -333,7 +333,19 @@ export async function executePlayerCommand(
   const toolName = fc.name ?? 'unknown'
   const args = (fc.args || {}) as Record<string, unknown>
 
-  const { result, narrative } = executeToolCall(state, clanId, toolName, args)
+  // コマンドパターンで実行
+  const cmd = createCommand(toolName, args)
+  if (!cmd) {
+    return {
+      tool: toolName,
+      args,
+      narrative: `不明なコマンド: ${toolName}`,
+      success: false,
+      aiResponse: 'コマンドを実行できませんでした。',
+    }
+  }
+
+  const cmdResult = cmd.execute(state, clanId)
 
   // 結果に対するAIのコメントを生成
   const commentResponse = await ai.models.generateContent({
@@ -341,15 +353,15 @@ export async function executePlayerCommand(
     contents: `あなたは戦国時代の軍師です。以下の行動結果について、${leader.name}に簡潔に報告してください（50文字以内）。
 
 行動: ${toolName}
-結果: ${narrative}
-成功: ${result?.success ? 'はい' : 'いいえ'}`,
+結果: ${cmdResult.narrative}
+成功: ${cmdResult.result.success ? 'はい' : 'いいえ'}`,
   })
 
   return {
     tool: toolName,
     args,
-    narrative,
-    success: result?.success ?? false,
-    aiResponse: commentResponse.text ?? narrative,
+    narrative: cmdResult.narrative,
+    success: cmdResult.result.success,
+    aiResponse: commentResponse.text ?? cmdResult.narrative,
   }
 }

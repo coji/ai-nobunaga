@@ -6,14 +6,14 @@ import type { Busho, Castle, Clan, GameState } from '../types.js'
 function processDelegation(state: GameState): string[] {
   const changes: string[] = []
 
-  for (const castle of state.castleCatalog.values()) {
+  for (const castle of Object.values(state.castleCatalog)) {
     // 委任なし、または城主がいない場合はスキップ
     if (castle.delegationPolicy === 'none' || !castle.castellanId) continue
 
-    const castellan = state.bushoCatalog.get(castle.castellanId)
+    const castellan = state.bushoCatalog[castle.castellanId]
     if (!castellan) continue
 
-    const clan = state.clanCatalog.get(castle.ownerId)
+    const clan = state.clanCatalog[castle.ownerId]
     if (!clan) continue
 
     // 城主の政治力で成長量が変わる（政治50で基準、100で2倍）
@@ -77,17 +77,17 @@ export function processTurnEnd(state: GameState): string[] {
   const delegationChanges = processDelegation(state)
   changes.push(...delegationChanges)
 
-  for (const clan of state.clanCatalog.values()) {
+  for (const clan of Object.values(state.clanCatalog)) {
     let totalIncome = 0
     let totalFood = 0
     let totalUpkeep = 0
 
     for (const castleId of clan.castleIds) {
-      const castle = state.castleCatalog.get(castleId)
+      const castle = state.castleCatalog[castleId]
       if (!castle) continue
       // 城主の能力で収入ボーナス
       const castellan = castle.castellanId
-        ? state.bushoCatalog.get(castle.castellanId)
+        ? state.bushoCatalog[castle.castellanId]
         : null
       const castellanBonus = castellan ? 0.8 + castellan.politics / 250 : 1.0 // 政治100で1.2倍
       // 民忠による収入補正（50未満で減少、50で100%、100で120%）
@@ -124,13 +124,13 @@ export function processTurnEnd(state: GameState): string[] {
     }
     if (clan.food < 0) {
       // 兵糧切れで兵士が離散
-      const totalSoldiers = clan.castleIds.reduce((sum, id) => {
-        const castle = state.castleCatalog.get(id)
+      const totalSoldiers = clan.castleIds.reduce((sum: number, id: string) => {
+        const castle = state.castleCatalog[id]
         return sum + (castle?.soldiers ?? 0)
       }, 0)
       const desertion = Math.floor(totalSoldiers * 0.1)
       for (const castleId of clan.castleIds) {
-        const castle = state.castleCatalog.get(castleId)
+        const castle = state.castleCatalog[castleId]
         if (!castle) continue
         const loss = Math.floor(castle.soldiers * 0.1)
         castle.soldiers = Math.max(0, castle.soldiers - loss)
@@ -156,10 +156,10 @@ export function processTurnEnd(state: GameState): string[] {
 function checkBushoLoyalty(state: GameState): string[] {
   const changes: string[] = []
 
-  for (const busho of state.bushoCatalog.values()) {
+  for (const busho of Object.values(state.bushoCatalog)) {
     // 当主はスキップ
     if (!busho.clanId) continue
-    const clan = state.clanCatalog.get(busho.clanId)
+    const clan = state.clanCatalog[busho.clanId]
     if (!clan || clan.leaderId === busho.id) continue
 
     // 忠誠が30未満で寝返り・独立の可能性
@@ -169,7 +169,7 @@ function checkBushoLoyalty(state: GameState): string[] {
 
       if (roll < betrayalChance) {
         // 城主かどうかチェック
-        const castle = [...state.castleCatalog.values()].find(
+        const castle = Object.values(state.castleCatalog).find(
           (c) => c.castellanId === busho.id,
         )
 
@@ -210,13 +210,13 @@ function handleMatsudairaIndependence(
   if (!busho.clanId) {
     return changes
   }
-  const oldClan = state.clanCatalog.get(busho.clanId)
+  const oldClan = state.clanCatalog[busho.clanId]
   if (!oldClan) {
     return changes
   }
 
   // 旧主から城を削除
-  oldClan.castleIds = oldClan.castleIds.filter((id) => id !== castle.id)
+  oldClan.castleIds = oldClan.castleIds.filter((id: string) => id !== castle.id)
 
   // 徳川家を作成
   const tokugawaClan: Clan = {
@@ -227,7 +227,7 @@ function handleMatsudairaIndependence(
     food: 3000,
     castleIds: [castle.id],
   }
-  state.clanCatalog.set('tokugawa', tokugawaClan)
+  state.clanCatalog['tokugawa'] = tokugawaClan
 
   // 武将の所属を変更
   busho.clanId = 'tokugawa'
@@ -285,7 +285,7 @@ function handleBetrayalToCastle(
       hostileRelation.clan1Id === oldClan.id
         ? hostileRelation.clan2Id
         : hostileRelation.clan1Id
-    const newClan = state.clanCatalog.get(newClanId)
+    const newClan = state.clanCatalog[newClanId]
 
     if (newClan) {
       // 旧主から城を削除

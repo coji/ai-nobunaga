@@ -72,17 +72,17 @@ export async function holdCouncil(
   clanId: string,
   topic: string,
 ): Promise<CouncilOpinion[]> {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) {
     throw new Error(`Clan not found: ${clanId}`)
   }
-  const leader = state.bushoCatalog.get(clan.leaderId)
+  const leader = state.bushoCatalog[clan.leaderId]
   if (!leader) {
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
 
   // 当主以外の家臣を取得（最大4名）
-  const retainers = [...state.bushoCatalog.values()]
+  const retainers = Object.values(state.bushoCatalog)
     .filter((b) => b.clanId === clanId && b.id !== clan.leaderId)
     .slice(0, 4)
 
@@ -274,16 +274,16 @@ export async function conductCouncilRound(
   previousStatements: CouncilStatement[],
   round: number,
 ): Promise<CouncilStatement[]> {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) {
     throw new Error(`Clan not found: ${clanId}`)
   }
-  const leader = state.bushoCatalog.get(clan.leaderId)
+  const leader = state.bushoCatalog[clan.leaderId]
   if (!leader) {
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
 
-  const allRetainers = [...state.bushoCatalog.values()]
+  const allRetainers = Object.values(state.bushoCatalog)
     .filter((b) => b.clanId === clanId && b.id !== clan.leaderId)
     .slice(0, 4)
 
@@ -544,7 +544,7 @@ export async function summarizeCouncilProposals(
   allStatements: CouncilStatement[],
 ): Promise<CouncilProposal[]> {
   const gameContext = buildGameContextPrompt(state, clanId)
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) {
     throw new Error(`Clan not found: ${clanId}`)
   }
@@ -555,7 +555,7 @@ export async function summarizeCouncilProposals(
   // 自勢力の城一覧
   const myCastles = clan.castleIds
     .map((id) => {
-      const c = state.castleCatalog.get(id)
+      const c = state.castleCatalog[id]
       if (!c) return null
       return `  - ${c.id}（${c.name}）: 兵${c.soldiers}、農${c.agriculture}、商${c.commerce}`
     })
@@ -565,10 +565,10 @@ export async function summarizeCouncilProposals(
   // 隣接する敵城
   const attackTargets: string[] = []
   for (const castleId of clan.castleIds) {
-    const castle = state.castleCatalog.get(castleId)
+    const castle = state.castleCatalog[castleId]
     if (!castle) continue
     for (const adjId of castle.adjacentCastleIds) {
-      const adj = state.castleCatalog.get(adjId)
+      const adj = state.castleCatalog[adjId]
       if (!adj) continue
       if (adj.ownerId !== clanId) {
         attackTargets.push(
@@ -579,16 +579,16 @@ export async function summarizeCouncilProposals(
   }
 
   // 他勢力一覧
-  const otherClans = [...state.clanCatalog.values()]
+  const otherClans = Object.values(state.clanCatalog)
     .filter((c) => c.id !== clanId)
     .map((c) => `  - ${c.id}（${c.name}）`)
     .join('\n')
 
   // 敵勢力の武将一覧（調略対象）
-  const enemyBushos = [...state.bushoCatalog.values()]
+  const enemyBushos = Object.values(state.bushoCatalog)
     .filter((b) => b.clanId !== clanId && b.clanId !== null)
     .map((b) => {
-      const bClan = b.clanId ? state.clanCatalog.get(b.clanId) : null
+      const bClan = b.clanId ? state.clanCatalog[b.clanId] : null
       const isLeader = bClan?.leaderId === b.id
       return `  - ${b.id}（${b.name}）[${bClan?.name || '不明'}]${isLeader ? ' ※当主' : ''}`
     })
@@ -814,7 +814,7 @@ export async function generateRetainerComments(
 
   for (const commenter of commenters) {
     // 武将情報を取得
-    const busho = [...state.bushoCatalog.values()].find(
+    const busho = Object.values(state.bushoCatalog).find(
       (b) => b.name === commenter.name && b.clanId === clanId,
     )
     if (!busho) continue
@@ -912,19 +912,19 @@ export async function generateLetter(
   purpose: 'propose_alliance' | 'threaten' | 'respond_to_letter',
   context?: string,
 ): Promise<Letter> {
-  const fromClan = state.clanCatalog.get(fromClanId)
+  const fromClan = state.clanCatalog[fromClanId]
   if (!fromClan) {
     throw new Error(`Clan not found: ${fromClanId}`)
   }
-  const toClan = state.clanCatalog.get(toClanId)
+  const toClan = state.clanCatalog[toClanId]
   if (!toClan) {
     throw new Error(`Clan not found: ${toClanId}`)
   }
-  const fromLeader = state.bushoCatalog.get(fromClan.leaderId)
+  const fromLeader = state.bushoCatalog[fromClan.leaderId]
   if (!fromLeader) {
     throw new Error(`Leader not found: ${fromClan.leaderId}`)
   }
-  const toLeader = state.bushoCatalog.get(toClan.leaderId)
+  const toLeader = state.bushoCatalog[toClan.leaderId]
   if (!toLeader) {
     throw new Error(`Leader not found: ${toClan.leaderId}`)
   }

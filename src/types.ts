@@ -209,10 +209,10 @@ export interface Letter {
 
 export interface GameState {
   turn: number
-  bushoCatalog: Map<string, Busho>
-  clanCatalog: Map<string, Clan>
-  castleCatalog: Map<string, Castle>
-  factionCatalog: Map<string, Faction>
+  bushoCatalog: Record<string, Busho>
+  clanCatalog: Record<string, Clan>
+  castleCatalog: Record<string, Castle>
+  factionCatalog: Record<string, Faction>
   diplomacyRelations: DiplomacyRelation[]
   grudgeHistory: GrudgeEvent[]
   letters: Letter[]

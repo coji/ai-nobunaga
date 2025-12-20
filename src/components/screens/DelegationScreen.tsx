@@ -20,10 +20,11 @@ interface Props {
 }
 
 export function DelegationScreen({ castleId, onClose }: Props) {
-  const { gameState, updateGameState } = useGameStore()
-  const castle = gameState?.castleCatalog.get(castleId)
+  const { gameState } = useGameStore()
+  const executeToolCall = useGameStore((s) => s.executeToolCall)
+  const castle = gameState?.castleCatalog[castleId]
   const castellan = castle?.castellanId
-    ? gameState?.bushoCatalog.get(castle.castellanId)
+    ? gameState?.bushoCatalog[castle.castellanId]
     : null
 
   const currentPolicyIndex = castle
@@ -48,12 +49,10 @@ export function DelegationScreen({ castleId, onClose }: Props) {
 
     if (key.return) {
       const policy = POLICIES[selectedIndex]
-      if (policy && castle) {
-        updateGameState((state) => {
-          const c = state.castleCatalog.get(castleId)
-          if (c) {
-            c.delegationPolicy = policy.value
-          }
+      if (policy && castle && gameState) {
+        executeToolCall(gameState.playerClanId, 'delegate', {
+          castleId,
+          policy: policy.value,
         })
         onClose()
       }

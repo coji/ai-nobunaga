@@ -68,19 +68,19 @@ export function useGameActions({
     clearAiResults()
 
     const state = getState()
-    const playerClan = state.clanCatalog.get(state.playerClanId)
+    const playerClan = state.clanCatalog[state.playerClanId]
     if (!playerClan) {
       throw new Error(`Clan not found: ${state.playerClanId}`)
     }
 
     try {
       // AI大名の行動を順番に処理
-      const clanIds = [...state.clanCatalog.keys()].filter(
+      const clanIds = Object.keys(state.clanCatalog).filter(
         (id) => id !== playerClan.id,
       )
 
       for (const clanId of clanIds) {
-        const clan = state.clanCatalog.get(clanId)
+        const clan = state.clanCatalog[clanId]
         if (!clan) continue
 
         setMessage(`${clan.name}が思考中...`)
@@ -92,11 +92,13 @@ export function useGameActions({
         // 決定した行動を store 経由で実行（immer の draft を通じて）
         const aiResult: AITurnResult = { actions: [], summary: '様子見' }
         if (decision.toolName) {
-          const { result, narrative } = executeToolCall(
+          const cmdResult = executeToolCall(
             clanId,
             decision.toolName,
             decision.toolParams,
           )
+          const result = cmdResult?.result
+          const narrative = cmdResult?.narrative ?? ''
           aiResult.actions.push({
             tool: decision.toolName,
             args: decision.toolParams,

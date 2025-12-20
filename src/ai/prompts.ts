@@ -6,11 +6,11 @@ export function buildGameContextPrompt(
   state: GameState,
   clanId: string,
 ): string {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) {
     throw new Error(`Clan not found: ${clanId}`)
   }
-  const leader = state.bushoCatalog.get(clan.leaderId)
+  const leader = state.bushoCatalog[clan.leaderId]
   if (!leader) {
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
@@ -21,7 +21,7 @@ export function buildGameContextPrompt(
   let totalCommerce = 0
   const ownCastles = clan.castleIds
     .map((id) => {
-      const c = state.castleCatalog.get(id)
+      const c = state.castleCatalog[id]
       if (!c) return null
       totalSoldiers += c.soldiers
       totalAgriculture += c.agriculture
@@ -31,7 +31,7 @@ export function buildGameContextPrompt(
     .filter(Boolean)
     .join('\n')
 
-  const ownBusho = [...state.bushoCatalog.values()]
+  const ownBusho = Object.values(state.bushoCatalog)
     .filter((b) => b.clanId === clanId)
     .map((b) => `  - ${b.name}(ID:${b.id}): 忠誠${b.emotions.loyalty}`)
     .join('\n')
@@ -39,10 +39,10 @@ export function buildGameContextPrompt(
   // 隣接勢力を特定（自国の城と隣接する敵城の所有者）
   const adjacentClanIds = new Set<string>()
   for (const castleId of clan.castleIds) {
-    const castle = state.castleCatalog.get(castleId)
+    const castle = state.castleCatalog[castleId]
     if (!castle) continue
     for (const adjId of castle.adjacentCastleIds) {
-      const adj = state.castleCatalog.get(adjId)
+      const adj = state.castleCatalog[adjId]
       if (adj && adj.ownerId !== clanId) {
         adjacentClanIds.add(adj.ownerId)
       }
@@ -58,15 +58,15 @@ export function buildGameContextPrompt(
     }
   }
 
-  const otherClans = [...state.clanCatalog.values()]
+  const otherClans = Object.values(state.clanCatalog)
     .filter((c) => c.id !== clanId)
     .map((c) => {
-      const l = state.bushoCatalog.get(c.leaderId)
+      const l = state.bushoCatalog[c.leaderId]
       // 勢力の総兵力を計算
       let clanSoldiers = 0
       const castles = c.castleIds
         .map((id) => {
-          const castle = state.castleCatalog.get(id)
+          const castle = state.castleCatalog[id]
           if (!castle) return null
           clanSoldiers += castle.soldiers
           return `${castle.name}(ID:${id}, 兵${castle.soldiers})`
@@ -91,30 +91,30 @@ export function buildGameContextPrompt(
 
   const adjacentEnemies: string[] = []
   for (const castleId of clan.castleIds) {
-    const castle = state.castleCatalog.get(castleId)
+    const castle = state.castleCatalog[castleId]
     if (!castle) continue
     for (const adjId of castle.adjacentCastleIds) {
-      const adj = state.castleCatalog.get(adjId)
+      const adj = state.castleCatalog[adjId]
       if (!adj) continue
       if (adj.ownerId !== clanId) {
         adjacentEnemies.push(
-          `  ${castle.name}(${castleId}) → ${adj.name}(${adjId}): ${state.clanCatalog.get(adj.ownerId)?.name}, 兵${adj.soldiers}`,
+          `  ${castle.name}(${castleId}) → ${adj.name}(${adjId}): ${state.clanCatalog[adj.ownerId]?.name}, 兵${adj.soldiers}`,
         )
       }
     }
   }
 
-  const enemyBusho = [...state.bushoCatalog.values()]
+  const enemyBusho = Object.values(state.bushoCatalog)
     .filter((b) => b.clanId && b.clanId !== clanId)
     .map((b) => {
-      const clanName = b.clanId ? state.clanCatalog.get(b.clanId)?.name : '浪人'
+      const clanName = b.clanId ? state.clanCatalog[b.clanId]?.name : '浪人'
       return `  - ${b.name}(ID:${b.id}, ${clanName}): 忠誠${b.emotions.loyalty}`
     })
     .join('\n')
 
   // 同盟国リスト
   const alliedNames = [...alliedClanIds]
-    .map((id) => state.clanCatalog.get(id)?.name)
+    .map((id) => state.clanCatalog[id]?.name)
     .filter(Boolean)
     .join(', ')
 

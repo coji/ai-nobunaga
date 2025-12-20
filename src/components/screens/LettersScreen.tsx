@@ -28,8 +28,8 @@ export function LettersScreen({ currentLetter }: Props) {
           paddingX={1}
         >
           <Text dimColor>
-            {state.clanCatalog.get(currentLetter.fromClanId)?.name} →{' '}
-            {state.clanCatalog.get(currentLetter.toClanId)?.name}
+            {state.clanCatalog[currentLetter.fromClanId]?.name} →{' '}
+            {state.clanCatalog[currentLetter.toClanId]?.name}
           </Text>
           <Text>{currentLetter.greeting}</Text>
           <Text>{currentLetter.body}</Text>
@@ -45,8 +45,8 @@ export function LettersScreen({ currentLetter }: Props) {
           <Box key={letter.id} marginY={1}>
             <Text>
               ターン{letter.turn}:{' '}
-              {state.clanCatalog.get(letter.fromClanId)?.name} →{' '}
-              {state.clanCatalog.get(letter.toClanId)?.name} - {letter.summary}
+              {state.clanCatalog[letter.fromClanId]?.name} →{' '}
+              {state.clanCatalog[letter.toClanId]?.name} - {letter.summary}
             </Text>
           </Box>
         ))

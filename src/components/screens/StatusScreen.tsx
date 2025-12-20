@@ -25,7 +25,7 @@ export function StatusScreen({ selectedIndex }: Props) {
 
   if (!state) return null
 
-  const clans = [...state.clanCatalog.values()]
+  const clans = Object.values(state.clanCatalog)
 
   return (
     <Box flexDirection="column">
@@ -33,7 +33,7 @@ export function StatusScreen({ selectedIndex }: Props) {
         勢力情報 [↑↓で選択]
       </Text>
       {clans.map((clan, index) => {
-        const leader = state.bushoCatalog.get(clan.leaderId)
+        const leader = state.bushoCatalog[clan.leaderId]
         const isPlayer = clan.id === playerClanId
         const isSelected = index === selectedIndex
         const relation = state.diplomacyRelations.find(
@@ -42,7 +42,7 @@ export function StatusScreen({ selectedIndex }: Props) {
             (r.clan1Id === clan.id && r.clan2Id === playerClanId),
         )
         const totalSoldiers = clan.castleIds.reduce((sum, id) => {
-          const c = state.castleCatalog.get(id)
+          const c = state.castleCatalog[id]
           return sum + (c?.soldiers ?? 0)
         }, 0)
 
@@ -62,7 +62,7 @@ export function StatusScreen({ selectedIndex }: Props) {
         }
 
         // 所属武将一覧を取得（当主除く）
-        const retainers = [...state.bushoCatalog.values()].filter(
+        const retainers = Object.values(state.bushoCatalog).filter(
           (b) => b.clanId === clan.id && b.id !== clan.leaderId,
         )
 
@@ -76,10 +76,10 @@ export function StatusScreen({ selectedIndex }: Props) {
               　当主: {leader?.name} | 金: {clan.gold} | 兵糧: {clan.food} | 武将: {retainers.length + 1}人
             </Text>
             {clan.castleIds.map((id) => {
-              const castle = state.castleCatalog.get(id)
+              const castle = state.castleCatalog[id]
               if (!castle) return null
               const castellan = castle.castellanId
-                ? state.bushoCatalog.get(castle.castellanId)
+                ? state.bushoCatalog[castle.castellanId]
                 : null
               const loyaltyColor = getLoyaltyColor(castle.loyalty)
               const bushoLoyaltyColor = castellan
@@ -111,7 +111,7 @@ export function StatusScreen({ selectedIndex }: Props) {
                   const loyaltyColor = getLoyaltyColor(busho.emotions.loyalty)
                   // 城主かどうか確認
                   const isCastellan = clan.castleIds.some((cid) => {
-                    const c = state.castleCatalog.get(cid)
+                    const c = state.castleCatalog[cid]
                     return c?.castellanId === busho.id
                   })
                   return (

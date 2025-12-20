@@ -168,7 +168,7 @@ export function MapScreen() {
   )
 
   // 城を地図に配置
-  for (const castle of state.castleCatalog.values()) {
+  for (const castle of Object.values(state.castleCatalog)) {
     const pos = CASTLE_POSITIONS[castle.id]
     if (!pos) continue
 
@@ -194,7 +194,7 @@ export function MapScreen() {
   }
 
   // 勢力の凡例を作成
-  const clans = [...state.clanCatalog.values()]
+  const clans = Object.values(state.clanCatalog)
   const legend = clans.map((clan) => ({
     name: clan.name,
     color:

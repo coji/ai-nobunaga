@@ -15,7 +15,7 @@ export function validateAction(
   clanId: string,
   action: GameAction,
 ): { valid: boolean; reason?: string } {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) return { valid: false, reason: '勢力が存在しません' }
 
   switch (action.category) {
@@ -37,12 +37,12 @@ function validateDomesticAction(
   clanId: string,
   action: DomesticAction,
 ): { valid: boolean; reason?: string } {
-  const castle = state.castleCatalog.get(action.targetId)
+  const castle = state.castleCatalog[action.targetId]
   if (!castle) return { valid: false, reason: '対象の城が存在しません' }
   if (castle.ownerId !== clanId)
     return { valid: false, reason: '自勢力の城ではありません' }
 
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) return { valid: false, reason: '勢力が存在しません' }
   if (clan.gold < action.value) {
     return { valid: false, reason: '金銭が足りません' }
@@ -56,7 +56,7 @@ function validateDiplomacyAction(
   clanId: string,
   action: DiplomacyAction,
 ): { valid: boolean; reason?: string } {
-  const targetClan = state.clanCatalog.get(action.targetId)
+  const targetClan = state.clanCatalog[action.targetId]
   if (!targetClan) return { valid: false, reason: '対象の勢力が存在しません' }
   if (action.targetId === clanId)
     return { valid: false, reason: '自勢力に外交はできません' }
@@ -69,9 +69,9 @@ function validateMilitaryAction(
   clanId: string,
   action: MilitaryAction,
 ): { valid: boolean; reason?: string } {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) return { valid: false, reason: '勢力が存在しません' }
-  const targetCastle = state.castleCatalog.get(action.targetId)
+  const targetCastle = state.castleCatalog[action.targetId]
   if (!targetCastle) return { valid: false, reason: '対象の城が存在しません' }
 
   if (action.type === 'recruit_soldiers') {
@@ -93,7 +93,7 @@ function validateMilitaryAction(
   }
 
   if (action.type === 'attack') {
-    const fromCastle = state.castleCatalog.get(action.fromCastleId || '')
+    const fromCastle = state.castleCatalog[action.fromCastleId || '']
     if (!fromCastle) return { valid: false, reason: '出撃元の城が存在しません' }
     if (fromCastle.ownerId !== clanId)
       return { valid: false, reason: '出撃元が自勢力の城ではありません' }
@@ -115,7 +115,7 @@ function validateIntrigueAction(
   clanId: string,
   action: IntrigueAction,
 ): { valid: boolean; reason?: string } {
-  const clan = state.clanCatalog.get(clanId)
+  const clan = state.clanCatalog[clanId]
   if (!clan) return { valid: false, reason: '勢力が存在しません' }
   const costs: Record<IntrigueAction['type'], number> = {
     bribe: 500,

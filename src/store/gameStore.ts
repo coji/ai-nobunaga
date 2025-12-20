@@ -1,18 +1,14 @@
-// zustand + immer による状態管理ストア
+// zustand による状態管理ストア（Command Pattern 使用）
 
 import { create } from 'zustand'
-import { immer } from 'zustand/middleware/immer'
-import { executeToolCall as executeToolCallFn } from '../ai/executor.js'
-import { processTurnEnd as processTurnEndFn } from '../engine/turn.js'
-import type { AITurnResult } from '../ai/index.js'
-import type { ActionResult, GameState } from '../types.js'
-
-// executeToolCall の戻り値型
-interface ExecuteResult {
-  result: ActionResult | null
-  narrative: string
-  endTurn: boolean
-}
+import type { AITurnResult } from '../ai/turn.js'
+import {
+  createCommand,
+  EndTurnCommand,
+  type CommandResult,
+  type GameCommand,
+} from '../commands/index.js'
+import type { GameState } from '../types.js'
 
 // UI State（コンポーネント間で共有する状態）
 interface UIState {
@@ -26,6 +22,9 @@ interface UIState {
 interface GameStore extends UIState {
   // Game State
   gameState: GameState | null
+
+  // コマンド履歴（将来のUndo/Redo用）
+  commandHistory: GameCommand[]
 
   // 定数
   maxActions: number
@@ -42,158 +41,111 @@ interface GameStore extends UIState {
   addAiResult: (clanName: string, result: AITurnResult) => void
   clearAiResults: () => void
 
-  // ゲームアクション（engine 関数をラップ）
-  executeGameAction: (
-    executor: (state: GameState) => ActionResult,
-  ) => ActionResult
-  updateGameState: (updater: (state: GameState) => void) => void
+  // コマンド実行
+  executeCommand: (clanId: string, command: GameCommand) => CommandResult
 
-  // ツール実行（CouncilScreen などから使用）
+  // ツール名から実行（AI/UI互換用）
   executeToolCall: (
     clanId: string,
     toolName: string,
     args: Record<string, unknown>,
-  ) => ExecuteResult
+  ) => CommandResult | null
 
   // ターン終了処理
   processTurnEnd: () => string[]
 }
 
-export const useGameStore = create<GameStore>()(
-  immer((set, get) => ({
-    // 初期値
-    gameState: null,
-    message: '',
-    isProcessing: false,
-    actionsRemaining: 3,
-    aiResults: [],
-    maxActions: 3,
+export const useGameStore = create<GameStore>()((set, get) => ({
+  // 初期値
+  gameState: null,
+  commandHistory: [],
+  message: '',
+  isProcessing: false,
+  actionsRemaining: 3,
+  aiResults: [],
+  maxActions: 3,
 
-    // Game State アクション
-    initializeState: (state) => {
-      set((draft) => {
-        draft.gameState = state
-        draft.actionsRemaining = draft.maxActions
-        draft.message = ''
-        draft.isProcessing = false
-        draft.aiResults = []
-      })
-    },
+  // Game State アクション
+  initializeState: (state) => {
+    set({
+      gameState: state,
+      actionsRemaining: 3,
+      message: '',
+      isProcessing: false,
+      aiResults: [],
+      commandHistory: [],
+    })
+  },
 
-    getState: () => {
-      const state = get().gameState
-      if (!state) {
-        throw new Error('Game state not initialized')
-      }
-      return state
-    },
+  getState: () => {
+    const state = get().gameState
+    if (!state) {
+      throw new Error('Game state not initialized')
+    }
+    return state
+  },
 
-    // UI State アクション
-    setMessage: (message) => {
-      set((draft) => {
-        draft.message = message
-      })
-    },
+  // UI State アクション
+  setMessage: (message) => {
+    set({ message })
+  },
 
-    setIsProcessing: (isProcessing) => {
-      set((draft) => {
-        draft.isProcessing = isProcessing
-      })
-    },
+  setIsProcessing: (isProcessing) => {
+    set({ isProcessing })
+  },
 
-    setActionsRemaining: (remaining) => {
-      set((draft) => {
-        draft.actionsRemaining = remaining
-      })
-    },
+  setActionsRemaining: (remaining) => {
+    set({ actionsRemaining: remaining })
+  },
 
-    resetActions: () => {
-      set((draft) => {
-        draft.actionsRemaining = draft.maxActions
-      })
-    },
+  resetActions: () => {
+    set({ actionsRemaining: get().maxActions })
+  },
 
-    addAiResult: (clanName, result) => {
-      set((draft) => {
-        draft.aiResults.push({ clanName, result })
-      })
-    },
+  addAiResult: (clanName, result) => {
+    set({ aiResults: [...get().aiResults, { clanName, result }] })
+  },
 
-    clearAiResults: () => {
-      set((draft) => {
-        draft.aiResults = []
-      })
-    },
+  clearAiResults: () => {
+    set({ aiResults: [] })
+  },
 
-    // ゲームアクション実行（engine 関数をラップ）
-    // executor は draft を受け取り、直接ミューテーションして結果を返す
-    executeGameAction: (executor) => {
-      let result: ActionResult | undefined
+  // コマンド実行（純粋関数のため状態を置き換える）
+  executeCommand: (clanId, command) => {
+    const state = get().gameState
+    if (!state) {
+      throw new Error('Game state not initialized')
+    }
 
-      set((draft) => {
-        if (!draft.gameState) {
-          throw new Error('Game state not initialized')
-        }
-        // immer の draft を通じて engine 関数を実行
-        // engine 関数は draft を直接ミューテーションする
-        result = executor(draft.gameState as GameState)
-      })
+    // コマンドを実行（純粋関数: 新しい状態を返す）
+    const result = command.execute(state, clanId)
 
-      if (!result) {
-        throw new Error('Action executor did not return a result')
-      }
-      return result
-    },
+    // 状態を更新
+    set({
+      gameState: result.newState,
+      commandHistory: [...get().commandHistory, command],
+    })
 
-    // 汎用的な状態更新（ターン終了処理など）
-    updateGameState: (updater) => {
-      set((draft) => {
-        if (!draft.gameState) {
-          throw new Error('Game state not initialized')
-        }
-        updater(draft.gameState as GameState)
-      })
-    },
+    return result
+  },
 
-    // ツール実行（CouncilScreen などから使用）
-    // immer の draft を通じて state を変更し、React に変更を検知させる
-    executeToolCall: (clanId, toolName, args) => {
-      let execResult: ExecuteResult | undefined
+  // ツール名から実行（createCommand でコマンドを生成）
+  executeToolCall: (clanId, toolName, args) => {
+    const command = createCommand(toolName, args)
+    if (!command) {
+      console.warn(`Unknown tool: ${toolName}`)
+      return null
+    }
+    return get().executeCommand(clanId, command)
+  },
 
-      set((draft) => {
-        if (!draft.gameState) {
-          throw new Error('Game state not initialized')
-        }
-        // immer の draft を通じて executeToolCall を実行
-        execResult = executeToolCallFn(
-          draft.gameState as GameState,
-          clanId,
-          toolName,
-          args,
-        )
-      })
-
-      if (!execResult) {
-        throw new Error('executeToolCall did not return a result')
-      }
-      return execResult
-    },
-
-    // ターン終了処理（immer の draft を通じて実行）
-    processTurnEnd: () => {
-      let changes: string[] = []
-
-      set((draft) => {
-        if (!draft.gameState) {
-          throw new Error('Game state not initialized')
-        }
-        changes = processTurnEndFn(draft.gameState as GameState)
-      })
-
-      return changes
-    },
-  })),
-)
+  // ターン終了処理
+  processTurnEnd: () => {
+    const command = new EndTurnCommand()
+    const result = get().executeCommand('', command)
+    return result.result.stateChanges
+  },
+}))
 
 // セレクター（よく使うデータへのアクセサ）
 export const usePlayerClanId = () =>
@@ -202,15 +154,15 @@ export const usePlayerClanId = () =>
 export const usePlayerClan = () =>
   useGameStore((s) => {
     if (!s.gameState) return null
-    return s.gameState.clanCatalog.get(s.gameState.playerClanId)
+    return s.gameState.clanCatalog[s.gameState.playerClanId]
   })
 
 export const usePlayerLeader = () =>
   useGameStore((s) => {
     if (!s.gameState) return null
-    const clan = s.gameState.clanCatalog.get(s.gameState.playerClanId)
+    const clan = s.gameState.clanCatalog[s.gameState.playerClanId]
     if (!clan) return null
-    return s.gameState.bushoCatalog.get(clan.leaderId)
+    return s.gameState.bushoCatalog[clan.leaderId]
   })
 
 export const useTurn = () => useGameStore((s) => s.gameState?.turn ?? 0)

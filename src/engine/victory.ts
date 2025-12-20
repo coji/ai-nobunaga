@@ -8,9 +8,12 @@ export function checkVictory(state: GameState): {
   winner?: string
   reason?: string
 } {
+  const allClans = Object.values(state.clanCatalog)
+  const castleCount = Object.keys(state.castleCatalog).length
+
   // 全ての城を支配したら勝利
-  for (const clan of state.clanCatalog.values()) {
-    if (clan.castleIds.length === state.castleCatalog.size) {
+  for (const clan of allClans) {
+    if (clan.castleIds.length === castleCount) {
       return {
         gameOver: true,
         winner: clan.id,
@@ -19,17 +22,13 @@ export function checkVictory(state: GameState): {
     }
   }
 
-  // 城を失った勢力を除去
-  for (const clan of state.clanCatalog.values()) {
-    if (clan.castleIds.length === 0) {
-      state.clanCatalog.delete(clan.id)
-    }
-  }
+  // 城を失った勢力を除去（純粋関数なのでコピーが必要だが、checkVictoryは読み取り専用として使う）
+  // 注: 実際の除去処理はEndTurnCommandで行う
+  const activeClans = allClans.filter((clan) => clan.castleIds.length > 0)
 
   // 残り1勢力なら勝利
-  if (state.clanCatalog.size === 1) {
-    const clans = [...state.clanCatalog.values()]
-    const winner = clans[0]
+  if (activeClans.length === 1) {
+    const winner = activeClans[0]
     if (winner) {
       return {
         gameOver: true,
