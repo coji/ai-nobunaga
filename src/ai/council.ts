@@ -621,13 +621,17 @@ export async function summarizeCouncilProposals(
     .map((c) => `  - ${c.id}（${c.name}）`)
     .join('\n')
 
-  // 敵勢力の武将一覧（調略対象）
+  // 敵勢力の武将一覧（調略対象、当主は除外）
   const enemyBushos = Object.values(state.bushoCatalog)
-    .filter((b) => b.clanId !== clanId && b.clanId !== null)
+    .filter((b) => {
+      if (!b.clanId || b.clanId === clanId) return false
+      // 当主は調略対象外
+      const bClan = state.clanCatalog[b.clanId]
+      return bClan?.leaderId !== b.id
+    })
     .map((b) => {
       const bClan = b.clanId ? state.clanCatalog[b.clanId] : null
-      const isLeader = bClan?.leaderId === b.id
-      return `  - ${b.id}（${b.name}）[${bClan?.name || '不明'}]${isLeader ? ' ※当主' : ''}`
+      return `  - ${b.id}（${b.name}）[${bClan?.name || '不明'}]`
     })
     .join('\n')
 

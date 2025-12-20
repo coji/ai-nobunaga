@@ -13,10 +13,8 @@ export class EndTurnCommand implements GameCommand {
     const newState = structuredClone(state)
     const changes = processTurnEnd(newState)
 
-    // ターン終了時にサマリーを記録
+    // ターン終了時にサマリーを記録（都度保存される）
     playLogger.logTurnEnd(newState)
-    // 自動保存
-    playLogger.saveIntermediate()
 
     return {
       newState,

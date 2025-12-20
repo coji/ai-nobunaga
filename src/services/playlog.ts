@@ -135,6 +135,9 @@ class PlayLogManager {
     }
 
     this.currentLog.entries.push(entry)
+
+    // 都度保存
+    this.saveToFile()
   }
 
   /** ターン終了時のサマリーを記録 */
@@ -166,6 +169,9 @@ class PlayLogManager {
       turn: state.turn,
       clans,
     })
+
+    // 都度保存
+    this.saveToFile()
   }
 
   /** ゲーム終了を記録 */

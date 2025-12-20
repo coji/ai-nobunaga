@@ -15,6 +15,7 @@ import {
   type CouncilStatement,
   type RetainerComment,
 } from '../../ai/index.js'
+import { playLogger } from '../../services/playlog.js'
 import { useGameStore } from '../../store/gameStore.js'
 import type { GameState, ResultGrade } from '../../types.js'
 
@@ -263,7 +264,11 @@ ${enemyInfo.join('\n')}
       }
       if (key.return) {
         // 最後の行動だった場合はターンエンドへ
-        if (actionsRemaining !== undefined && actionsRemaining <= 0 && onTurnEnd) {
+        if (
+          actionsRemaining !== undefined &&
+          actionsRemaining <= 0 &&
+          onTurnEnd
+        ) {
           onTurnEnd()
         } else {
           handleNewTopic()
@@ -343,6 +348,21 @@ ${enemyInfo.join('\n')}
     const narrative = cmdResult?.narrative ?? ''
     const grade: ResultGrade =
       cmdResult?.result?.grade ?? (success ? 'success' : 'failure')
+
+    // 評定でのコマンド実行をログに記録
+    if (cmdResult?.result) {
+      const newState = useGameStore.getState().gameState
+      if (newState) {
+        playLogger.logAction(
+          newState,
+          playerClanId,
+          'council',
+          proposal.tool,
+          proposal.args,
+          cmdResult.result,
+        )
+      }
+    }
 
     // ナレーションを生成
     const richNarrative = await generateNarrative(

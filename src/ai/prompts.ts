@@ -106,7 +106,12 @@ export function buildGameContextPrompt(
   }
 
   const enemyBusho = Object.values(state.bushoCatalog)
-    .filter((b) => b.clanId && b.clanId !== clanId)
+    .filter((b) => {
+      if (!b.clanId || b.clanId === clanId) return false
+      // 当主は調略対象外
+      const bClan = state.clanCatalog[b.clanId]
+      return bClan?.leaderId !== b.id
+    })
     .map((b) => {
       const clanName = b.clanId ? state.clanCatalog[b.clanId]?.name : '浪人'
       return `  - ${b.name}(ID:${b.id}, ${clanName}): 忠誠${b.emotions.loyalty}`
