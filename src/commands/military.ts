@@ -250,8 +250,8 @@ export class AttackCommand extends BaseCommand {
         `防御側損失: ${defenderLoss}`,
       )
 
-      const narrative = `${gradePrefix}${fromCastle.name}から${this.soldierCount}の兵で${targetCastle.name}を攻撃したが、撃退された。`
-      return createSuccessResult(ctx.newState, action, grade, narrative, stateChanges, narrative)
+      const narrative = `${fromCastle.name}から${this.soldierCount}の兵で${targetCastle.name}を攻撃したが、撃退された。`
+      return createSuccessResult(ctx.newState, action, 'failure', narrative, stateChanges, narrative)
     }
   }
 }

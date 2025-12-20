@@ -84,7 +84,7 @@ export class ProposeAllianceCommand extends BaseCommand {
       return createSuccessResult(ctx.newState, action, grade, narrative, stateChanges, narrative)
     } else {
       // 同盟失敗
-      const narrative = `${gradePrefix}${targetClan.name}との同盟交渉は失敗に終わった。`
+      const narrative = `${targetClan.name}との同盟交渉は失敗に終わった。`
       return createSuccessResult(ctx.newState, action, 'failure', narrative, [], narrative)
     }
   }
@@ -262,7 +262,7 @@ export class ThreatenCommand extends BaseCommand {
 
       stateChanges.push(`${targetClan.name}との関係が悪化`)
 
-      const narrative = `${gradePrefix}${targetClan.name}への威嚇は失敗し、敵対関係となった。`
+      const narrative = `${targetClan.name}への威嚇は失敗し、敵対関係となった。`
       return createSuccessResult(ctx.newState, action, 'failure', narrative, stateChanges, narrative)
     }
   }

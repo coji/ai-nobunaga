@@ -129,7 +129,7 @@ export class BribeCommand extends BaseCommand {
 
       stateChanges.push(`${targetBusho.name}の調略に失敗`)
 
-      const narrative = `${gradePrefix}${targetBusho.name}への調略は失敗。${this.goldAmount}金を失った。`
+      const narrative = `${targetBusho.name}への調略は失敗。${this.goldAmount}金を失った。`
       return createSuccessResult(ctx.newState, action, 'failure', narrative, stateChanges, narrative)
     }
   }
@@ -265,7 +265,7 @@ export class AssassinateCommand extends BaseCommand {
         stateChanges.push('暗殺失敗、敵対関係に')
       }
 
-      const narrative = `${gradePrefix}${targetBusho.name}の暗殺に失敗。${cost}金を失い、敵対関係となった。`
+      const narrative = `${targetBusho.name}の暗殺に失敗。${cost}金を失い、敵対関係となった。`
       return createSuccessResult(ctx.newState, action, 'failure', narrative, stateChanges, narrative)
     }
   }
