@@ -1,14 +1,22 @@
 // コマンドファクトリー
 
+import { ACTION_DEFAULTS } from '../constants/index.js'
 import type { Castle } from '../types.js'
-import { DevelopAgricultureCommand, DevelopCommerceCommand } from './domestic.js'
 import {
   ProposeAllianceCommand,
   SendGiftCommand,
   ThreatenCommand,
 } from './diplomacy.js'
+import {
+  DevelopAgricultureCommand,
+  DevelopCommerceCommand,
+} from './domestic.js'
 import { AssassinateCommand, BribeCommand } from './intrigue.js'
-import { AttackCommand, FortifyCommand, RecruitSoldiersCommand } from './military.js'
+import {
+  AttackCommand,
+  FortifyCommand,
+  RecruitSoldiersCommand,
+} from './military.js'
 import { DelegateCommand, EndTurnCommand } from './turn.js'
 import type { GameCommand } from './types.js'
 
@@ -68,24 +76,24 @@ export function createCommand(
     case 'develop_agriculture':
       return new DevelopAgricultureCommand(
         args.castleId as string,
-        (args.investment as number) ?? 500,
+        (args.investment as number) ?? ACTION_DEFAULTS.DEVELOP.INVESTMENT,
       )
     case 'develop_commerce':
       return new DevelopCommerceCommand(
         args.castleId as string,
-        (args.investment as number) ?? 500,
+        (args.investment as number) ?? ACTION_DEFAULTS.DEVELOP.INVESTMENT,
       )
 
     // 軍事
     case 'recruit_soldiers':
       return new RecruitSoldiersCommand(
         args.castleId as string,
-        (args.count as number) ?? 100,
+        (args.count as number) ?? ACTION_DEFAULTS.RECRUIT.MAX_COUNT,
       )
     case 'fortify':
       return new FortifyCommand(
         args.castleId as string,
-        (args.investment as number) ?? 500,
+        (args.investment as number) ?? ACTION_DEFAULTS.DEVELOP.INVESTMENT,
       )
     case 'attack':
       return new AttackCommand(
@@ -100,7 +108,7 @@ export function createCommand(
     case 'send_gift':
       return new SendGiftCommand(
         args.targetClanId as string,
-        (args.goldAmount as number) ?? 300,
+        (args.goldAmount as number) ?? ACTION_DEFAULTS.DIPLOMACY.GIFT_AMOUNT,
       )
     case 'threaten':
       return new ThreatenCommand(args.targetClanId as string)
@@ -109,7 +117,7 @@ export function createCommand(
     case 'bribe':
       return new BribeCommand(
         args.targetBushoId as string,
-        (args.goldAmount as number) ?? 500,
+        (args.goldAmount as number) ?? ACTION_DEFAULTS.INTRIGUE.BRIBE_AMOUNT,
       )
     case 'assassinate':
       return new AssassinateCommand(args.targetBushoId as string)

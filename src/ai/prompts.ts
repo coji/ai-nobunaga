@@ -1,5 +1,6 @@
 // プロンプト生成
 
+import { ACTION_DEFAULTS } from '../constants/index.js'
 import type { Busho, GameState } from '../types.js'
 
 export function buildGameContextPrompt(
@@ -165,9 +166,15 @@ export function buildPlayerCommandSystemPrompt(
   leaderName: string,
   gold: number,
 ): string {
-  // AI大名と同じ計算式
-  const recommendedRecruitCount = Math.min(500, Math.floor(gold / 3))
-  const recommendedInvestment = Math.min(500, gold)
+  // AI大名と同じ計算式（ACTION_DEFAULTSを参照）
+  const recommendedRecruitCount = Math.min(
+    ACTION_DEFAULTS.RECRUIT.MAX_COUNT,
+    Math.floor(gold * ACTION_DEFAULTS.RECRUIT.GOLD_RATIO),
+  )
+  const recommendedInvestment = Math.min(
+    ACTION_DEFAULTS.DEVELOP.INVESTMENT,
+    gold,
+  )
 
   return `あなたは戦国シミュレーションゲームの軍師です。
 プレイヤー（${leaderName}）の指示を解釈し、適切なツールを1つ呼び出してください。
@@ -178,9 +185,9 @@ export function buildPlayerCommandSystemPrompt(
 - 不明な点があれば確認してから実行
 
 【デフォルト値（指定がない場合）】
-- 徴兵: ${recommendedRecruitCount}人（金${gold}の1/3、上限500人。コスト1人2金）
+- 徴兵: ${recommendedRecruitCount}人（金の${Math.floor(ACTION_DEFAULTS.RECRUIT.GOLD_RATIO * 100)}%、上限${ACTION_DEFAULTS.RECRUIT.MAX_COUNT}人。コスト1人2金）
 - 開発（農業・商業・城壁）: ${recommendedInvestment}金を投資
-- 攻撃: 出撃城の兵力の70%を派遣
+- 攻撃: 出撃城の兵力の${Math.floor(ACTION_DEFAULTS.ATTACK.SOLDIER_RATIO * 100)}%を派遣
 
 指示が曖昧な場合は、最も妥当な解釈で実行してください。`
 }

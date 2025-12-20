@@ -1,5 +1,6 @@
 // 評定（複数武将による議論）
 
+import { ACTION_DEFAULTS, COUNCIL_CONFIG } from '../constants/index.js'
 import type { Busho, GameState, ResultGrade } from '../types.js'
 import { ai, MODEL, MODEL_LITE } from './client.js'
 import { buildGameContextPrompt } from './prompts.js'
@@ -77,10 +78,12 @@ function getPersonalitySpeechStyle(personality: string[]): string {
 // 能力に基づいた専門性
 function getExpertise(busho: Busho): string {
   const skills: string[] = []
-  if (busho.warfare >= 80) skills.push('軍事')
-  if (busho.politics >= 80) skills.push('内政')
-  if (busho.intelligence >= 80) skills.push('謀略・外交')
-  if (busho.charisma >= 80) skills.push('人心掌握')
+  if (busho.warfare >= COUNCIL_CONFIG.EXPERTISE_THRESHOLD) skills.push('軍事')
+  if (busho.politics >= COUNCIL_CONFIG.EXPERTISE_THRESHOLD) skills.push('内政')
+  if (busho.intelligence >= COUNCIL_CONFIG.EXPERTISE_THRESHOLD)
+    skills.push('謀略・外交')
+  if (busho.charisma >= COUNCIL_CONFIG.EXPERTISE_THRESHOLD)
+    skills.push('人心掌握')
 
   return skills.length > 0 ? `${skills.join('・')}に長けた` : ''
 }
@@ -163,9 +166,9 @@ function selectRepresentatives(
     return { busho: b, score }
   })
 
-  // スコア順にソートして上位2人を選出
+  // スコア順にソートして上位者を選出
   scored.sort((a, b) => b.score - a.score)
-  return scored.slice(0, 2).map((s) => s.busho)
+  return scored.slice(0, COUNCIL_CONFIG.REPRESENTATIVES).map((s) => s.busho)
 }
 
 // === メイン関数 ===
@@ -185,10 +188,10 @@ export async function holdCouncil(
     throw new Error(`Leader not found: ${clan.leaderId}`)
   }
 
-  // 当主以外の家臣を取得（最大4名）
+  // 当主以外の家臣を取得
   const retainers = Object.values(state.bushoCatalog)
     .filter((b) => b.clanId === clanId && b.id !== clan.leaderId)
-    .slice(0, 4)
+    .slice(0, COUNCIL_CONFIG.MAX_RETAINERS)
 
   if (retainers.length === 0) {
     return [
@@ -297,7 +300,7 @@ export async function conductCouncilRound(
 
   const allRetainers = Object.values(state.bushoCatalog)
     .filter((b) => b.clanId === clanId && b.id !== clan.leaderId)
-    .slice(0, 4)
+    .slice(0, COUNCIL_CONFIG.MAX_RETAINERS)
 
   if (allRetainers.length === 0) {
     return []
@@ -411,9 +414,10 @@ export async function conductCouncilRound(
         style: '丁寧に話す',
       }
 
-      // 他の武将に話をふるかどうか（30%の確率）
+      // 他の武将に話をふるかどうか
       const shouldDelegateToOther =
-        otherRetainerNames.length > 0 && Math.random() < 0.3
+        otherRetainerNames.length > 0 &&
+        Math.random() < COUNCIL_CONFIG.DELEGATION_CHANCE
       const delegateTarget = shouldDelegateToOther
         ? otherRetainerNames[
             Math.floor(Math.random() * otherRetainerNames.length)
@@ -633,8 +637,8 @@ export async function summarizeCouncilProposals(
 
     if (category === 'domestic' || category === 'general') {
       parts.push(`【内政】※自分の城のIDを使用
-- develop_agriculture: 農業発展 → {"castleId": "城ID", "investment": 500}
-- develop_commerce: 商業発展 → {"castleId": "城ID", "investment": 500}
+- develop_agriculture: 農業発展 → {"castleId": "城ID", "investment": ${ACTION_DEFAULTS.DEVELOP.INVESTMENT}}
+- develop_commerce: 商業発展 → {"castleId": "城ID", "investment": ${ACTION_DEFAULTS.DEVELOP.INVESTMENT}}
 
 自勢力の城:
 ${myCastles}`)
@@ -642,9 +646,9 @@ ${myCastles}`)
 
     if (category === 'military' || category === 'general') {
       parts.push(`【軍事】※自分の城のIDを使用
-- recruit_soldiers: 徴兵 → {"castleId": "城ID", "count": 200}
-- fortify: 城郭強化 → {"castleId": "城ID", "investment": 500}
-- attack: 攻撃 → {"fromCastleId": "出撃城ID", "targetCastleId": "敵城ID", "soldierCount": 300}
+- recruit_soldiers: 徴兵 → {"castleId": "城ID", "count": ${ACTION_DEFAULTS.RECRUIT.MAX_COUNT}}
+- fortify: 城郭強化 → {"castleId": "城ID", "investment": ${ACTION_DEFAULTS.DEVELOP.INVESTMENT}}
+- attack: 攻撃 → {"fromCastleId": "出撃城ID", "targetCastleId": "敵城ID", "soldierCount": 出撃城兵力の${Math.floor(ACTION_DEFAULTS.ATTACK.SOLDIER_RATIO * 100)}%}
 
 自勢力の城:
 ${myCastles}
@@ -656,7 +660,7 @@ ${attackTargets.length > 0 ? attackTargets.join('\n') : '  なし'}`)
     if (category === 'diplomacy' || category === 'general') {
       parts.push(`【外交】※相手勢力のIDを使用
 - propose_alliance: 同盟申込 → {"targetClanId": "勢力ID", "duration": 12}
-- send_gift: 贈り物 → {"targetClanId": "勢力ID", "goldAmount": 300}
+- send_gift: 贈り物 → {"targetClanId": "勢力ID", "goldAmount": ${ACTION_DEFAULTS.DIPLOMACY.GIFT_AMOUNT}}
 - threaten: 威嚇 → {"targetClanId": "勢力ID"}
 
 他勢力:
@@ -664,7 +668,7 @@ ${otherClans}`)
     }
 
     if (category === 'intrigue' || category === 'general') {
-      parts.push(`【謀略】※敵武将のIDを使用（コスト: bribe=500金、spread_rumor=200金）
+      parts.push(`【謀略】※敵武将のIDを使用（コスト: bribe=${ACTION_DEFAULTS.INTRIGUE.BRIBE_AMOUNT}金、spread_rumor=200金）
 - bribe: 買収（忠誠低下） → {"targetBushoId": "武将ID"}
 - spread_rumor: 流言（不満増加） → {"targetBushoId": "武将ID"}
 

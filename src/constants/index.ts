@@ -9,3 +9,9 @@ export {
   MILITARY,
   TURN,
 } from './game.js'
+
+export {
+  ACTION_DEFAULTS,
+  AI_THRESHOLDS,
+  COUNCIL_CONFIG,
+} from './actionDefaults.js'

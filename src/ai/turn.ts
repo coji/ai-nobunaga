@@ -1,6 +1,7 @@
 // AIターン・プレイヤーコマンド実行
 
 import { createCommand } from '../commands/index.js'
+import { ACTION_DEFAULTS, AI_THRESHOLDS } from '../constants/index.js'
 import type { GameState, PersonalityTag } from '../types.js'
 import { ai, MODEL, MODEL_LITE } from './client.js'
 import {
@@ -123,18 +124,22 @@ export async function decideAIAction(
   // 状況に応じた推奨行動を生成
   const getRecommendedAction = (): string => {
     // 兵力が少なければ徴兵優先
-    if (totalSoldiers < 300) {
+    if (totalSoldiers < AI_THRESHOLDS.MIN_SOLDIERS_FOR_RECRUIT) {
       return '兵力不足。recruit で兵を増やせ。'
     }
     // 金が少なければ開発
-    if (clan.gold < 500) {
+    if (clan.gold < AI_THRESHOLDS.MIN_GOLD_FOR_DEVELOP) {
       return '資金不足。develop で commerce を発展させよ。'
     }
     // 攻撃可能で兵力十分なら攻撃を検討
     const firstTarget = attackTargets[0]
-    if (firstTarget && totalSoldiers >= 800) {
+    if (firstTarget && totalSoldiers >= AI_THRESHOLDS.MIN_SOLDIERS_FOR_ATTACK) {
       const targetCastle = state.castleCatalog[firstTarget.to]
-      if (targetCastle && totalSoldiers > targetCastle.soldiers * 1.5) {
+      if (
+        targetCastle &&
+        totalSoldiers >
+          targetCastle.soldiers * AI_THRESHOLDS.POWER_RATIO_FOR_ATTACK
+      ) {
         return `attack で ${targetCastle.name} を攻めるチャンス。`
       }
     }
@@ -159,8 +164,8 @@ ${personalityHints}
 現状分析: ${getRecommendedAction()}
 
 JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
-- recruit: {"castleId":"${firstCastleId}","count":${Math.min(500, Math.floor(clan.gold / 3))}} 兵を徴募（兵糧消費）
-- develop: {"castleId":"${firstCastleId}","type":"agriculture|commerce|defense"} 開発（金500消費）
+- recruit: {"castleId":"${firstCastleId}","count":${Math.min(ACTION_DEFAULTS.RECRUIT.MAX_COUNT, Math.floor(clan.gold * ACTION_DEFAULTS.RECRUIT.GOLD_RATIO))}} 兵を徴募（兵糧消費）
+- develop: {"castleId":"${firstCastleId}","type":"agriculture|commerce|defense"} 開発（金${ACTION_DEFAULTS.DEVELOP.INVESTMENT}消費）
 - attack: {"fromCastleId":"出撃城ID","targetCastleId":"敵城ID","soldierCount":兵数} 攻撃
 - diplomacy: {"targetClanId":"相手勢力ID"} 同盟提案
 
@@ -205,7 +210,10 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
             } else {
               toolName = 'develop_agriculture'
             }
-            toolParams = { castleId: decision.params.castleId, investment: 500 }
+            toolParams = {
+              castleId: decision.params.castleId,
+              investment: ACTION_DEFAULTS.DEVELOP.INVESTMENT,
+            }
             break
           }
           case 'attack':
@@ -215,7 +223,12 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
                 state.castleCatalog[decision.params.fromCastleId as string]
               const soldiers =
                 (decision.params.soldierCount as number) ||
-                (fromCastle ? Math.floor(fromCastle.soldiers * 0.7) : 500)
+                (fromCastle
+                  ? Math.floor(
+                      fromCastle.soldiers *
+                        ACTION_DEFAULTS.ATTACK.SOLDIER_RATIO,
+                    )
+                  : 500)
               toolParams = { ...decision.params, soldierCount: soldiers }
             }
             break
@@ -233,21 +246,27 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
   // LLMが行動を返さなかった場合、ルールベースで強制行動
   if (!toolName) {
     // 優先順位: 1.兵力不足なら徴兵 2.金不足なら開発 3.攻撃可能なら攻撃 4.それ以外は開発
-    if (totalSoldiers < 500 && clan.gold >= 300) {
+    if (
+      totalSoldiers < AI_THRESHOLDS.MIN_SOLDIERS_FOR_RECRUIT &&
+      clan.gold >= AI_THRESHOLDS.MIN_GOLD_FOR_RECRUIT
+    ) {
       // 徴兵
       toolName = 'recruit_soldiers'
       toolParams = {
         castleId: firstCastleId,
-        count: Math.min(300, Math.floor(clan.gold / 2)),
+        count: Math.min(
+          ACTION_DEFAULTS.RECRUIT.MAX_COUNT,
+          Math.floor(clan.gold * ACTION_DEFAULTS.RECRUIT.GOLD_RATIO),
+        ),
       }
-    } else if (clan.gold < 1000) {
+    } else if (clan.gold < AI_THRESHOLDS.MIN_GOLD_FOR_DEVELOP) {
       // 商業開発で金を稼ぐ
       toolName = 'develop_commerce'
       toolParams = {
         castleId: firstCastleId,
-        investment: Math.min(500, clan.gold),
+        investment: Math.min(ACTION_DEFAULTS.DEVELOP.INVESTMENT, clan.gold),
       }
-    } else if (totalSoldiers >= 3000) {
+    } else if (totalSoldiers >= AI_THRESHOLDS.MIN_SOLDIERS_FOR_ATTACK) {
       // 攻撃可能で兵力十分なら攻撃
       const target = attackTargets[0]
       if (target) {
@@ -256,13 +275,16 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
         if (
           targetCastle &&
           fromCastle &&
-          fromCastle.soldiers > targetCastle.soldiers * 1.2
+          fromCastle.soldiers >
+            targetCastle.soldiers * AI_THRESHOLDS.POWER_RATIO_FOR_ATTACK
         ) {
           toolName = 'attack'
           toolParams = {
             fromCastleId: target.from,
             targetCastleId: target.to,
-            soldierCount: Math.floor(fromCastle.soldiers * 0.7),
+            soldierCount: Math.floor(
+              fromCastle.soldiers * ACTION_DEFAULTS.ATTACK.SOLDIER_RATIO,
+            ),
           }
         }
       }
@@ -273,7 +295,7 @@ JSONで返答: {"action":"recruit|develop|attack|diplomacy","params":{...}}
       toolName = 'develop_agriculture'
       toolParams = {
         castleId: firstCastleId,
-        investment: Math.min(500, clan.gold),
+        investment: Math.min(ACTION_DEFAULTS.DEVELOP.INVESTMENT, clan.gold),
       }
     }
   }
